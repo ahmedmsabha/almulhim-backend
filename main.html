@@ -1,0 +1,19 @@
+<!-- test-login.html — افتحها مباشرة في المتصفح -->
+<script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js/dist/clerk.browser.js"></script>
+<script>
+  const clerk = new Clerk(
+    'pk_test_ZmFuY3ktYmVhZ2xlLTQuY2xlcmsuYWNjb3VudHMuZGV2JA',
+  ); // publishable key
+  clerk.load().then(() => {
+    clerk.mountSignIn(document.getElementById('sign-in'));
+    clerk.addListener(({ user, session }) => {
+      if (session) {
+        session.getToken().then((token) => {
+          document.getElementById('token').textContent = token;
+        });
+      }
+    });
+  });
+</script>
+<div id="sign-in"></div>
+<pre id="token"></pre>
