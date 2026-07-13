@@ -6,10 +6,7 @@ import {
 } from '../constants/receipt-upload.constants';
 
 export type ReceiptObjectValidationError =
-  | 'missing'
-  | 'invalid_type'
-  | 'empty'
-  | 'too_large';
+  'missing' | 'invalid_type' | 'empty' | 'too_large';
 
 export type ReceiptObjectValidationResult =
   | { valid: true; contentType: AllowedReceiptContentType }
@@ -22,10 +19,7 @@ export const validateReceiptObjectMetadata = (
     return { valid: false, error: 'missing' };
   }
 
-  const contentType = metadata.contentType
-    ?.split(';')[0]
-    ?.trim()
-    .toLowerCase();
+  const contentType = metadata.contentType?.split(';')[0]?.trim().toLowerCase();
 
   if (
     !contentType ||
@@ -34,10 +28,7 @@ export const validateReceiptObjectMetadata = (
     return { valid: false, error: 'invalid_type' };
   }
 
-  if (
-    metadata.contentLength === undefined ||
-    metadata.contentLength < 1
-  ) {
+  if (metadata.contentLength === undefined || metadata.contentLength < 1) {
     return { valid: false, error: 'empty' };
   }
 

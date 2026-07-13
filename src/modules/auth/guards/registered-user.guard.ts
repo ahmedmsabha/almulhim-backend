@@ -70,10 +70,7 @@ export class RegisteredUserGuard implements CanActivate {
     }
   }
 
-  private assertStudentOnly(
-    context: ExecutionContext,
-    role: string,
-  ): boolean {
+  private assertStudentOnly(context: ExecutionContext, role: string): boolean {
     const studentOnly = this.reflector.getAllAndOverride<boolean>(
       STUDENT_ONLY_KEY,
       [context.getHandler(), context.getClass()],

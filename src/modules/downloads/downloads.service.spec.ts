@@ -91,9 +91,9 @@ describe('DownloadsService', () => {
 
   beforeEach(() => {
     prismaService = new PrismaService();
-    r2StorageService = new R2StorageService(
-      { get: jest.fn().mockReturnValue(900) } as unknown as ConfigService,
-    );
+    r2StorageService = new R2StorageService({
+      get: jest.fn().mockReturnValue(900),
+    } as unknown as ConfigService);
     configService = {
       get: jest.fn().mockReturnValue(900),
     } as unknown as ConfigService;
@@ -105,7 +105,9 @@ describe('DownloadsService', () => {
     );
 
     jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
-    jest.spyOn(prismaService.lessonVideo, 'findFirst').mockResolvedValue(lessonVideo);
+    jest
+      .spyOn(prismaService.lessonVideo, 'findFirst')
+      .mockResolvedValue(lessonVideo);
     jest.spyOn(r2StorageService, 'headObject').mockResolvedValue({
       contentType: 'video/mp4',
       contentLength: 1024,
@@ -131,7 +133,9 @@ describe('DownloadsService', () => {
     });
 
     it('returns a signed URL and creates a download record', async () => {
-      jest.spyOn(prismaService.videoDownload, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.videoDownload, 'findFirst')
+        .mockResolvedValue(null);
       jest.spyOn(prismaService.videoDownload, 'create').mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440060',
         userId: studentUser.id,

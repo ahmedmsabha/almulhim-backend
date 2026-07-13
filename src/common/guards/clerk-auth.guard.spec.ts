@@ -1,7 +1,4 @@
-import {
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { ClerkAuthGuard } from './clerk-auth.guard';
@@ -14,9 +11,7 @@ describe('ClerkAuthGuard', () => {
   let clerkService: jest.Mocked<Pick<ClerkService, 'verifyBearerToken'>>;
   let configService: jest.Mocked<Pick<ConfigService, 'get'>>;
 
-  const createContext = (
-    authorizationHeader?: string,
-  ): ExecutionContext => {
+  const createContext = (authorizationHeader?: string): ExecutionContext => {
     const request = {
       headers: {
         authorization: authorizationHeader,

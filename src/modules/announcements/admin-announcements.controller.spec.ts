@@ -60,10 +60,7 @@ describe('AdminAnnouncementsController', () => {
     });
 
     await expect(
-      adminAnnouncementsController.publish(
-        announcement.id,
-        'admin_clerk_456',
-      ),
+      adminAnnouncementsController.publish(announcement.id, 'admin_clerk_456'),
     ).resolves.toMatchObject({ isPublished: true });
 
     expect(adminAnnouncementsService.publish).toHaveBeenCalledWith(
@@ -88,7 +85,10 @@ describe('AdminAnnouncementsController', () => {
     );
 
     await expect(
-      adminAnnouncementsController.create({ body: 'Body text', region: 'gaza' }),
+      adminAnnouncementsController.create({
+        body: 'Body text',
+        region: 'gaza',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

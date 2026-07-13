@@ -114,7 +114,9 @@ describe('ContentController', () => {
 
     it('allows a registered student', async () => {
       authService.findUserByClerkId.mockResolvedValue(studentUser);
-      const request = { clerkUserId: studentUser.clerkId } as AuthenticatedRequest;
+      const request = {
+        clerkUserId: studentUser.clerkId,
+      } as AuthenticatedRequest;
 
       await expect(guard.canActivate(createContext(request))).resolves.toBe(
         true,
@@ -124,7 +126,9 @@ describe('ContentController', () => {
 
     it('allows a registered admin', async () => {
       authService.findUserByClerkId.mockResolvedValue(adminUser);
-      const request = { clerkUserId: adminUser.clerkId } as AuthenticatedRequest;
+      const request = {
+        clerkUserId: adminUser.clerkId,
+      } as AuthenticatedRequest;
 
       await expect(guard.canActivate(createContext(request))).resolves.toBe(
         true,
@@ -143,7 +147,9 @@ describe('ContentController', () => {
 
       await expect(
         guard.canActivate(
-          createContext({ clerkUserId: 'user_unknown' } as AuthenticatedRequest),
+          createContext({
+            clerkUserId: 'user_unknown',
+          } as AuthenticatedRequest),
         ),
       ).rejects.toThrow(new NotFoundException('User is not registered'));
     });

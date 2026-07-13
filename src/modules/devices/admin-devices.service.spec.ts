@@ -157,6 +157,8 @@ describe('AdminDevicesService', () => {
   it('rejects invalid device types', async () => {
     await expect(
       adminDevicesService.resetBinding(userId, 'tablet'),
-    ).rejects.toThrow(new BadRequestException('deviceType must be web or mobile'));
+    ).rejects.toThrow(
+      new BadRequestException('deviceType must be web or mobile'),
+    );
   });
 });

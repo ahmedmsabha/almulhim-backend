@@ -29,7 +29,11 @@ jest.mock('./receipt-verification.service', () => ({
   },
 }));
 
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { PrismaService } from '../../lib/database/prisma.service';
@@ -282,7 +286,7 @@ describe('AdminSubscriptionsService', () => {
 
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(row as never);
+        .mockResolvedValue(row);
 
       const result = await service.getSubscriptionById(pendingRow.id);
 
@@ -321,7 +325,7 @@ describe('AdminSubscriptionsService', () => {
 
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(activeRow as never);
+        .mockResolvedValue(activeRow);
 
       const result = await service.getSubscriptionById(pendingRow.id);
 
@@ -335,9 +339,9 @@ describe('AdminSubscriptionsService', () => {
         .spyOn(prismaService.subscription, 'findUnique')
         .mockResolvedValue(null);
 
-      await expect(
-        service.getSubscriptionById(pendingRow.id),
-      ).rejects.toThrow(new NotFoundException('Subscription not found'));
+      await expect(service.getSubscriptionById(pendingRow.id)).rejects.toThrow(
+        new NotFoundException('Subscription not found'),
+      );
     });
   });
 
@@ -345,7 +349,7 @@ describe('AdminSubscriptionsService', () => {
     it('returns a signed GET URL for the receipt', async () => {
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(pendingRow as never);
+        .mockResolvedValue(pendingRow);
       jest
         .spyOn(r2StorageService, 'createSignedGetUrl')
         .mockResolvedValue('https://r2.example.com/signed-url');
@@ -374,7 +378,7 @@ describe('AdminSubscriptionsService', () => {
       const noReceiptRow = { ...pendingRow, receiptStorageKey: null };
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(noReceiptRow as never);
+        .mockResolvedValue(noReceiptRow);
 
       await expect(service.getReceiptUrl(pendingRow.id)).rejects.toThrow(
         new BadRequestException('Subscription has no receipt on file'),
@@ -391,17 +395,17 @@ describe('AdminSubscriptionsService', () => {
 
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValueOnce(pendingRow as never)
+        .mockResolvedValueOnce(pendingRow)
         .mockResolvedValueOnce({
           ...pendingRow,
           status: 'active' as const,
           approvedAt,
           expiresAt: expectedExpiresAt,
-        } as never);
+        });
 
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 1 } as never);
+        .mockResolvedValue({ count: 1 });
 
       const result = await service.approveSubscription(
         pendingRow.id,
@@ -433,11 +437,11 @@ describe('AdminSubscriptionsService', () => {
       const reviewRow = { ...pendingRow, status: 'pending_review' as const };
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValueOnce(reviewRow as never)
+        .mockResolvedValueOnce(reviewRow)
         .mockResolvedValueOnce({ ...reviewRow, status: 'active' } as never);
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 1 } as never);
+        .mockResolvedValue({ count: 1 });
 
       const result = await service.approveSubscription(
         pendingRow.id,
@@ -462,7 +466,7 @@ describe('AdminSubscriptionsService', () => {
 
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(reviewRow as never);
+        .mockResolvedValue(reviewRow);
       jest.spyOn(prismaService.subscription, 'updateMany').mockRejectedValue(
         new PrismaClientKnownRequestError('Unique constraint failed', {
           code: 'P2002',
@@ -484,7 +488,7 @@ describe('AdminSubscriptionsService', () => {
       const activeRow = { ...pendingRow, status: 'active' as const };
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(activeRow as never);
+        .mockResolvedValue(activeRow);
 
       await expect(
         service.approveSubscription(pendingRow.id, adminClerkId),
@@ -506,18 +510,18 @@ describe('AdminSubscriptionsService', () => {
     it('moves pending subscription to rejected and captures PostHog event', async () => {
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValueOnce(pendingRow as never)
+        .mockResolvedValueOnce(pendingRow)
         .mockResolvedValueOnce({
           ...pendingRow,
           status: 'rejected' as const,
           rejectedAt: new Date(),
           rejectionReason: 'Payment not recognized',
           receiptTransactionReference: null,
-        } as never);
+        });
 
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 1 } as never);
+        .mockResolvedValue({ count: 1 });
 
       const result = await service.rejectSubscription(
         pendingRow.id,
@@ -555,18 +559,18 @@ describe('AdminSubscriptionsService', () => {
     it('rejects without a reason when body is empty', async () => {
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValueOnce(pendingRow as never)
+        .mockResolvedValueOnce(pendingRow)
         .mockResolvedValueOnce({
           ...pendingRow,
           status: 'rejected' as const,
           rejectedAt: new Date(),
           rejectionReason: null,
           receiptTransactionReference: null,
-        } as never);
+        });
 
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 1 } as never);
+        .mockResolvedValue({ count: 1 });
 
       const result = await service.rejectSubscription(
         pendingRow.id,
@@ -589,7 +593,7 @@ describe('AdminSubscriptionsService', () => {
       const activeRow = { ...pendingRow, status: 'active' as const };
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(activeRow as never);
+        .mockResolvedValue(activeRow);
 
       await expect(
         service.rejectSubscription(pendingRow.id, adminClerkId, {}),
@@ -599,10 +603,10 @@ describe('AdminSubscriptionsService', () => {
     it('throws BadRequestException when concurrent reject loses the race', async () => {
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(pendingRow as never);
+        .mockResolvedValue(pendingRow);
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 0 } as never);
+        .mockResolvedValue({ count: 0 });
 
       await expect(
         service.rejectSubscription(pendingRow.id, adminClerkId, {}),
@@ -613,18 +617,18 @@ describe('AdminSubscriptionsService', () => {
       const suspendedRow = { ...pendingRow, status: 'suspended' as const };
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValueOnce(suspendedRow as never)
+        .mockResolvedValueOnce(suspendedRow)
         .mockResolvedValueOnce({
           ...suspendedRow,
           status: 'rejected' as const,
           rejectedAt: new Date(),
           rejectionReason: 'Suspended access cleared',
           receiptTransactionReference: null,
-        } as never);
+        });
 
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 1 } as never);
+        .mockResolvedValue({ count: 1 });
 
       const result = await service.rejectSubscription(
         pendingRow.id,
@@ -651,7 +655,7 @@ describe('AdminSubscriptionsService', () => {
       const activeRow = { ...pendingRow, status: 'active' as const };
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(activeRow as never);
+        .mockResolvedValue(activeRow);
 
       const suspendedRow = {
         ...activeRow,
@@ -660,7 +664,7 @@ describe('AdminSubscriptionsService', () => {
       };
       jest
         .spyOn(prismaService.subscription, 'update')
-        .mockResolvedValue(suspendedRow as never);
+        .mockResolvedValue(suspendedRow);
 
       const result = await service.suspendSubscription(
         pendingRow.id,
@@ -675,20 +679,19 @@ describe('AdminSubscriptionsService', () => {
         }),
       );
 
-      expect(analyticsService.captureSubscriptionSuspended).toHaveBeenCalledWith(
-        studentUser.id,
-        {
-          subscriptionId: pendingRow.id,
-          userId: studentUser.id,
-          adminClerkId,
-        },
-      );
+      expect(
+        analyticsService.captureSubscriptionSuspended,
+      ).toHaveBeenCalledWith(studentUser.id, {
+        subscriptionId: pendingRow.id,
+        userId: studentUser.id,
+        adminClerkId,
+      });
     });
 
     it('throws BadRequestException when subscription is not active', async () => {
       jest
         .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(pendingRow as never);
+        .mockResolvedValue(pendingRow);
 
       await expect(
         service.suspendSubscription(pendingRow.id, adminClerkId),
@@ -720,7 +723,7 @@ describe('AdminSubscriptionsService', () => {
         .mockResolvedValueOnce([] as never);
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 1 } as never);
+        .mockResolvedValue({ count: 1 });
 
       await service.expireStaleSubscriptions();
 
@@ -754,15 +757,19 @@ describe('AdminSubscriptionsService', () => {
         .mockResolvedValueOnce([] as never);
       jest
         .spyOn(prismaService.subscription, 'updateMany')
-        .mockResolvedValue({ count: 0 } as never);
+        .mockResolvedValue({ count: 0 });
 
       await service.expireStaleSubscriptions();
 
-      expect(analyticsService.captureSubscriptionExpired).not.toHaveBeenCalled();
+      expect(
+        analyticsService.captureSubscriptionExpired,
+      ).not.toHaveBeenCalled();
     });
 
     it('does nothing when no stale subscriptions exist', async () => {
-      jest.spyOn(prismaService.subscription, 'findMany').mockResolvedValue([] as never);
+      jest
+        .spyOn(prismaService.subscription, 'findMany')
+        .mockResolvedValue([] as never);
 
       await expect(service.expireStaleSubscriptions()).resolves.not.toThrow();
       expect(prismaService.subscription.updateMany).not.toHaveBeenCalled();

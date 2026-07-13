@@ -17,9 +17,7 @@ export class ClerkService {
   private readonly logger = new Logger(ClerkService.name);
   private readonly clerkClient: ClerkClient;
 
-  constructor(
-    private readonly configService: ConfigService<AppEnv, true>,
-  ) {
+  constructor(private readonly configService: ConfigService<AppEnv, true>) {
     this.clerkClient = createClerkClient({
       secretKey: this.configService.get('CLERK_SECRET_KEY', { infer: true }),
       publishableKey: this.configService.get('CLERK_PUBLISHABLE_KEY', {

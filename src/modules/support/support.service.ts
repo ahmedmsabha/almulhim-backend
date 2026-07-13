@@ -71,7 +71,10 @@ export class SupportService {
     try {
       return createSupportRequestSchema.parse(input);
     } catch (error) {
-      this.logger.error('Failed to validate create support request payload', error);
+      this.logger.error(
+        'Failed to validate create support request payload',
+        error,
+      );
       throw error;
     }
   }

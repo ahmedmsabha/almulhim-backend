@@ -60,9 +60,9 @@ describe('NotificationsController', () => {
   it('delegates unread count', async () => {
     notificationsService.getUnreadCount.mockResolvedValue({ count: 3 });
 
-    await expect(
-      notificationsController.getUnreadCount(user),
-    ).resolves.toEqual({ count: 3 });
+    await expect(notificationsController.getUnreadCount(user)).resolves.toEqual(
+      { count: 3 },
+    );
   });
 
   it('delegates markRead', async () => {

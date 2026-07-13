@@ -13,9 +13,7 @@ export class PostHogService implements OnModuleDestroy {
   private readonly logger = new Logger(PostHogService.name);
   private readonly client: PostHog | null;
 
-  constructor(
-    private readonly configService: ConfigService<AppEnv, true>,
-  ) {
+  constructor(private readonly configService: ConfigService<AppEnv, true>) {
     const enabled = this.configService.get('POSTHOG_ENABLED', { infer: true });
 
     if (!enabled) {

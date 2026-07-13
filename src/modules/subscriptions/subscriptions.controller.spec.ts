@@ -99,7 +99,9 @@ describe('SubscriptionsController', () => {
   });
 
   it('delegates submitSubscription to the service', async () => {
-    subscriptionsService.submitSubscription.mockResolvedValue(subscriptionResponse);
+    subscriptionsService.submitSubscription.mockResolvedValue(
+      subscriptionResponse,
+    );
 
     await expect(
       subscriptionsController.submitSubscription(studentUser, {
@@ -144,7 +146,9 @@ describe('SubscriptionsController', () => {
   });
 
   it('delegates getMySubscription to the service', async () => {
-    subscriptionsService.getMySubscription.mockResolvedValue(subscriptionResponse);
+    subscriptionsService.getMySubscription.mockResolvedValue(
+      subscriptionResponse,
+    );
 
     await expect(
       subscriptionsController.getMySubscription(studentUser),

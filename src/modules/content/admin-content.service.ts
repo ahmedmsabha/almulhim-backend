@@ -726,9 +726,7 @@ export class AdminContentService {
     }
   }
 
-  async deleteVideo(
-    videoId: string,
-  ): Promise<{ deleted: true; id: string }> {
+  async deleteVideo(videoId: string): Promise<{ deleted: true; id: string }> {
     const video = await this.getVideoOrThrow(videoId);
 
     try {

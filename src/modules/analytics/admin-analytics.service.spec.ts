@@ -46,7 +46,14 @@ describe('AdminAnalyticsService', () => {
       .mockResolvedValueOnce(5);
     jest.spyOn(prismaService.supportRequest, 'count').mockResolvedValue(3);
     jest.spyOn(prismaService.user, 'groupBy').mockResolvedValue([
-      { region: 'gaza', _count: { _all: 30 }, _min: {}, _max: {}, _avg: {}, _sum: {} },
+      {
+        region: 'gaza',
+        _count: { _all: 30 },
+        _min: {},
+        _max: {},
+        _avg: {},
+        _sum: {},
+      },
       {
         region: 'west_bank',
         _count: { _all: 12 },

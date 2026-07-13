@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { ArcjetProtect } from '../../common/decorators/arcjet-protect.decorator';
 import { RequiresDeviceBinding } from '../../common/decorators/requires-device-binding.decorator';
 import { RequiresRegistration } from '../../common/decorators/requires-registration.decorator';

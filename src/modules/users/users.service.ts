@@ -75,7 +75,10 @@ export class UsersService {
         throw error;
       }
 
-      this.logger.error(`Failed to load current user for clerkId ${clerkId}`, error);
+      this.logger.error(
+        `Failed to load current user for clerkId ${clerkId}`,
+        error,
+      );
       throw error;
     }
   }

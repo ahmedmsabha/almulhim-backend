@@ -44,9 +44,7 @@ export class NotificationsController {
   }
 
   @Patch('read-all')
-  async markAllRead(
-    @CurrentUser() user: User,
-  ): Promise<{ updated: number }> {
+  async markAllRead(@CurrentUser() user: User): Promise<{ updated: number }> {
     return this.notificationsService.markAllRead(user);
   }
 

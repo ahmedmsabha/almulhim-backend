@@ -49,9 +49,7 @@ export const parseDeviceHeaders = (
   }
 
   if (deviceTypeRaw !== 'web' && deviceTypeRaw !== 'mobile') {
-    throw new BadRequestException(
-      'X-Device-Type header must be web or mobile',
-    );
+    throw new BadRequestException('X-Device-Type header must be web or mobile');
   }
 
   return {

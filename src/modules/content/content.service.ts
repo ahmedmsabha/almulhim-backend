@@ -29,13 +29,25 @@ const PUBLISHED_CHAPTER_WHERE = { isPublished: true } as const;
 
 const PUBLISHED_LESSON_WHERE = { isPublished: true } as const;
 
-const CHAPTER_ORDER = [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }];
+const CHAPTER_ORDER = [
+  { sortOrder: 'asc' as const },
+  { createdAt: 'asc' as const },
+];
 
-const LESSON_ORDER = [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }];
+const LESSON_ORDER = [
+  { sortOrder: 'asc' as const },
+  { createdAt: 'asc' as const },
+];
 
-const UNIT_ORDER = [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }];
+const UNIT_ORDER = [
+  { sortOrder: 'asc' as const },
+  { createdAt: 'asc' as const },
+];
 
-const MEDIA_ORDER = [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }];
+const MEDIA_ORDER = [
+  { sortOrder: 'asc' as const },
+  { createdAt: 'asc' as const },
+];
 
 @Injectable()
 export class ContentService {
@@ -139,7 +151,10 @@ export class ContentService {
     }
   }
 
-  async getChapter(user: User, chapterId: string): Promise<ChapterDetailResponse> {
+  async getChapter(
+    user: User,
+    chapterId: string,
+  ): Promise<ChapterDetailResponse> {
     const hasActiveSubscription = await this.hasActiveSubscription(user.id);
 
     try {
@@ -288,8 +303,7 @@ export class ContentService {
       }
 
       return (
-        (originalIndexById.get(left) ?? 0) -
-        (originalIndexById.get(right) ?? 0)
+        (originalIndexById.get(left) ?? 0) - (originalIndexById.get(right) ?? 0)
       );
     });
 

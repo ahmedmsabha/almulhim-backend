@@ -6,11 +6,7 @@ import { DownloadsController } from './downloads.controller';
 import { DownloadsService } from './downloads.service';
 
 @Module({
-  imports: [
-    DevicesLibModule,
-    forwardRef(() => DevicesModule),
-    StorageModule,
-  ],
+  imports: [DevicesLibModule, forwardRef(() => DevicesModule), StorageModule],
   controllers: [DownloadsController],
   providers: [DownloadsService],
   exports: [DownloadsService],

@@ -44,9 +44,7 @@ export class ArcjetProtectGuard implements CanActivate {
     }
 
     if (decision.isErrored()) {
-      this.logger.warn(
-        `Arcjet errored for profile "${profile}"; failing open`,
-      );
+      this.logger.warn(`Arcjet errored for profile "${profile}"; failing open`);
       return true;
     }
 

@@ -73,9 +73,9 @@ describe('NotificationsService', () => {
 
   describe('notifyRegion', () => {
     it('creates notification rows for students in the target region', async () => {
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([
-        { id: userId },
-      ] as never);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([{ id: userId }] as never);
       jest
         .spyOn(prismaService.notification, 'createMany')
         .mockResolvedValue({ count: 1 });
@@ -149,15 +149,17 @@ describe('NotificationsService', () => {
 
     it('looks up push tokens when PUSH_NOTIFICATIONS_ENABLED is true', async () => {
       configService.get.mockReturnValue(true);
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([
-        { id: userId },
-      ] as never);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([{ id: userId }] as never);
       jest
         .spyOn(prismaService.notification, 'createMany')
         .mockResolvedValue({ count: 1 });
-      jest.spyOn(prismaService.deviceBinding, 'findMany').mockResolvedValue([
-        { id: 'binding-1', pushToken: 'ExponentPushToken[test]' },
-      ] as never);
+      jest
+        .spyOn(prismaService.deviceBinding, 'findMany')
+        .mockResolvedValue([
+          { id: 'binding-1', pushToken: 'ExponentPushToken[test]' },
+        ] as never);
 
       await notificationsService.notifyRegion({
         region: 'gaza',
@@ -210,11 +212,11 @@ describe('NotificationsService', () => {
     it('marks an owned notification as read', async () => {
       jest
         .spyOn(prismaService.notification, 'findFirst')
-        .mockResolvedValue(notification as never);
+        .mockResolvedValue(notification);
       jest.spyOn(prismaService.notification, 'update').mockResolvedValue({
         ...notification,
         isRead: true,
-      } as never);
+      });
 
       await expect(
         notificationsService.markRead(student, notification.id),

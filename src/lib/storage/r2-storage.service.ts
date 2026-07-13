@@ -39,9 +39,7 @@ export class R2StorageService {
   private readonly client: S3Client;
   private readonly bucketName: string;
 
-  constructor(
-    private readonly configService: ConfigService<AppEnv, true>,
-  ) {
+  constructor(private readonly configService: ConfigService<AppEnv, true>) {
     const accountId = this.configService.get('R2_ACCOUNT_ID', { infer: true });
 
     this.bucketName = this.configService.get('R2_BUCKET_NAME', {
@@ -135,7 +133,10 @@ export class R2StorageService {
         { expiresIn: input.expiresInSeconds },
       );
     } catch (error) {
-      this.logger.error(`Failed to create signed URL for key: ${input.key}`, error);
+      this.logger.error(
+        `Failed to create signed URL for key: ${input.key}`,
+        error,
+      );
       throw error;
     }
   }

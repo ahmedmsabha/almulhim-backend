@@ -22,16 +22,18 @@ export class ReceiptVerificationRetryScheduler {
     );
 
     try {
-      const staleSubscriptions = await this.prismaService.subscription.findMany({
-        where: {
-          status: 'pending_review',
-          verifiedAt: null,
-          createdAt: { lte: staleBefore },
+      const staleSubscriptions = await this.prismaService.subscription.findMany(
+        {
+          where: {
+            status: 'pending_review',
+            verifiedAt: null,
+            createdAt: { lte: staleBefore },
+          },
+          select: { id: true },
+          orderBy: { createdAt: 'asc' },
+          take: STALE_VERIFICATION_BATCH_SIZE,
         },
-        select: { id: true },
-        orderBy: { createdAt: 'asc' },
-        take: STALE_VERIFICATION_BATCH_SIZE,
-      });
+      );
 
       if (staleSubscriptions.length === 0) {
         return;

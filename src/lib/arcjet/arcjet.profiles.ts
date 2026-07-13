@@ -32,42 +32,43 @@ export type ArcjetProfileRuleSet = {
   botDetection?: ReturnType<typeof detectBot>;
 };
 
-export const ARCJET_PROFILE_RULES: Record<ArcjetProfile, ArcjetProfileRuleSet> = {
-  'receipt-submit': {
-    rateLimit: userRateLimit(3, '1h'),
-    botDetection: scraperBotRule,
-  },
-  'receipt-upload-url': {
-    rateLimit: userRateLimit(10, '1h'),
-    botDetection: scraperBotRule,
-  },
-  'support-create': {
-    rateLimit: userRateLimit(5, '24h'),
-    botDetection: scraperBotRule,
-  },
-  'download-authorize': {
-    rateLimit: userRateLimit(30, '1h'),
-    botDetection: scraperBotRule,
-  },
-  'user-register': {
-    rateLimit: userRateLimit(5, '1h'),
-    botDetection: scraperBotRule,
-  },
-  'device-bind': {
-    rateLimit: userRateLimit(10, '1h'),
-    botDetection: scraperBotRule,
-  },
-  'upload-url': {
-    rateLimit: userRateLimit(20, '1h'),
-  },
-  'admin-mutation': {
-    rateLimit: userRateLimit(60, '1m'),
-  },
-  // Frequent student/admin search (debounced clients); AI-cost aware — 30/min per user.
-  'content-search': {
-    rateLimit: userRateLimit(30, '1m'),
-  },
-};
+export const ARCJET_PROFILE_RULES: Record<ArcjetProfile, ArcjetProfileRuleSet> =
+  {
+    'receipt-submit': {
+      rateLimit: userRateLimit(3, '1h'),
+      botDetection: scraperBotRule,
+    },
+    'receipt-upload-url': {
+      rateLimit: userRateLimit(10, '1h'),
+      botDetection: scraperBotRule,
+    },
+    'support-create': {
+      rateLimit: userRateLimit(5, '24h'),
+      botDetection: scraperBotRule,
+    },
+    'download-authorize': {
+      rateLimit: userRateLimit(30, '1h'),
+      botDetection: scraperBotRule,
+    },
+    'user-register': {
+      rateLimit: userRateLimit(5, '1h'),
+      botDetection: scraperBotRule,
+    },
+    'device-bind': {
+      rateLimit: userRateLimit(10, '1h'),
+      botDetection: scraperBotRule,
+    },
+    'upload-url': {
+      rateLimit: userRateLimit(20, '1h'),
+    },
+    'admin-mutation': {
+      rateLimit: userRateLimit(60, '1m'),
+    },
+    // Frequent student/admin search (debounced clients); AI-cost aware — 30/min per user.
+    'content-search': {
+      rateLimit: userRateLimit(30, '1m'),
+    },
+  };
 
 export const ARCJET_BASE_RULES = [shield({ mode: ARCJET_RULE_MODE })] as const;
 

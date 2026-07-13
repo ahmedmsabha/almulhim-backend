@@ -170,15 +170,17 @@ export class AdminAnalyticsService {
       user: { fullName: string };
     }>,
   ): DashboardRecentActivity[] {
-    const subscriptionActivities: DashboardRecentActivity[] =
-      subscriptions.map((subscription) => ({
+    const subscriptionActivities: DashboardRecentActivity[] = subscriptions.map(
+      (subscription) => ({
         id: `subscription:${subscription.id}`,
         studentName: subscription.user.fullName,
         action:
           SUBSCRIPTION_STATUS_ACTIONS[subscription.status] ??
           'Subscription updated',
-        timestamp: this.resolveSubscriptionTimestamp(subscription).toISOString(),
-      }));
+        timestamp:
+          this.resolveSubscriptionTimestamp(subscription).toISOString(),
+      }),
+    );
 
     const supportActivities: DashboardRecentActivity[] = supportRequests.map(
       (request) => ({

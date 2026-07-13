@@ -34,7 +34,9 @@ describe('RegisteredUserGuard', () => {
     updatedAt: new Date(),
   };
 
-  const createContext = (request: Partial<AuthenticatedRequest>): ExecutionContext =>
+  const createContext = (
+    request: Partial<AuthenticatedRequest>,
+  ): ExecutionContext =>
     ({
       switchToHttp: () => ({
         getRequest: () => request,
@@ -106,9 +108,7 @@ describe('RegisteredUserGuard', () => {
 
     await expect(
       guard.canActivate(createContext({ clerkUserId: 'user_123' })),
-    ).rejects.toThrow(
-      new ForbiddenException('Student account is deactivated'),
-    );
+    ).rejects.toThrow(new ForbiddenException('Student account is deactivated'));
   });
 
   it('throws ForbiddenException for student-only routes when role is admin', async () => {

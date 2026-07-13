@@ -10,7 +10,11 @@ import type {
   AuthenticatedRequest,
   DeviceRequestContext,
 } from '../../common/types/authenticated-request.type';
-import type { Lesson, User, VideoDownload } from '../../generated/prisma/client';
+import type {
+  Lesson,
+  User,
+  VideoDownload,
+} from '../../generated/prisma/client';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
 import {
@@ -76,10 +80,15 @@ export class DownloadsService {
   ): Promise<VideoDownloadAuthorizeResponse> {
     this.assertMobileDevice(device);
 
-    const lessonVideo = await this.loadAccessibleLessonVideo(user, lessonVideoId);
+    const lessonVideo = await this.loadAccessibleLessonVideo(
+      user,
+      lessonVideoId,
+    );
     const hasActiveSubscription = await this.hasActiveSubscription(user.id);
 
-    if (computeIsLocked(lessonVideo.lesson.accessLevel, hasActiveSubscription)) {
+    if (
+      computeIsLocked(lessonVideo.lesson.accessLevel, hasActiveSubscription)
+    ) {
       throw new NotFoundException('Lesson video not found');
     }
 
@@ -97,9 +106,12 @@ export class DownloadsService {
         lessonVideoId,
         device.deviceHash,
       );
-      const expiresInSeconds = this.configService.get('SIGNED_URL_TTL_SECONDS', {
-        infer: true,
-      });
+      const expiresInSeconds = this.configService.get(
+        'SIGNED_URL_TTL_SECONDS',
+        {
+          infer: true,
+        },
+      );
       const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
       const url = await this.r2StorageService.createSignedGetUrl({
         key: lessonVideo.storageKey,
@@ -155,19 +167,12 @@ export class DownloadsService {
         downloads: downloads.map((download) =>
           toVideoDownloadSyncItemResponse(
             download,
-            this.isDownloadAccessValid(
-              user,
-              download,
-              hasActiveSubscription,
-            ),
+            this.isDownloadAccessValid(user, download, hasActiveSubscription),
           ),
         ),
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to list downloads for user ${user.id}`,
-        error,
-      );
+      this.logger.error(`Failed to list downloads for user ${user.id}`, error);
       throw error;
     }
   }
@@ -300,8 +305,7 @@ export class DownloadsService {
       return false;
     }
 
-    const regionMatches =
-      unit.region === 'both' || unit.region === user.region;
+    const regionMatches = unit.region === 'both' || unit.region === user.region;
 
     if (!regionMatches) {
       return false;

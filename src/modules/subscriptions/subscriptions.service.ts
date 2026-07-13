@@ -185,7 +185,10 @@ export class SubscriptionsService {
         throw error;
       }
 
-      this.logger.error('Failed to validate submit subscription payload', error);
+      this.logger.error(
+        'Failed to validate submit subscription payload',
+        error,
+      );
       throw error;
     }
   }
@@ -206,7 +209,9 @@ export class SubscriptionsService {
     }
   }
 
-  private async assertReceiptKeyNotUsed(receiptStorageKey: string): Promise<void> {
+  private async assertReceiptKeyNotUsed(
+    receiptStorageKey: string,
+  ): Promise<void> {
     try {
       const existingSubscription =
         await this.prismaService.subscription.findFirst({
@@ -300,7 +305,9 @@ export class SubscriptionsService {
     }
   }
 
-  private async assertValidReceiptObject(receiptStorageKey: string): Promise<void> {
+  private async assertValidReceiptObject(
+    receiptStorageKey: string,
+  ): Promise<void> {
     try {
       const metadata =
         await this.r2StorageService.headObject(receiptStorageKey);

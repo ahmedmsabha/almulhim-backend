@@ -1,4 +1,7 @@
-import type { DeviceBinding, DeviceType } from '../../../generated/prisma/client';
+import type {
+  DeviceBinding,
+  DeviceType,
+} from '../../../generated/prisma/client';
 
 export type DeviceSlotStatus = {
   bound: boolean;

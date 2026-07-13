@@ -9,9 +9,7 @@ import { SupportService } from './support.service';
 
 describe('SupportController', () => {
   let supportController: SupportController;
-  let supportService: jest.Mocked<
-    Pick<SupportService, 'create' | 'listMine'>
-  >;
+  let supportService: jest.Mocked<Pick<SupportService, 'create' | 'listMine'>>;
 
   const user = {
     id: '550e8400-e29b-41d4-a716-446655440001',

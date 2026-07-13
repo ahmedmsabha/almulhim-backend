@@ -26,7 +26,7 @@ describe('validateAnnouncementImageMetadata', () => {
       validateAnnouncementImageMetadata({
         contentType: 'application/pdf',
         contentLength: 1024,
-      } as ObjectMetadata),
+      }),
     ).toEqual({ valid: false, error: 'invalid_type' });
   });
 

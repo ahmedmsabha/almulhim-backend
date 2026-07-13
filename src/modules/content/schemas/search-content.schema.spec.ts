@@ -34,11 +34,14 @@ describe('searchContentSchema', () => {
   });
 
   it('rejects items over the max length', () => {
-    const items = Array.from({ length: CONTENT_SEARCH_MAX_ITEMS + 1 }, (_, i) => ({
-      ...validItem,
-      id: `550e8400-e29b-41d4-a716-44665544${String(i).padStart(4, '0')}`,
-      orderIndex: i,
-    }));
+    const items = Array.from(
+      { length: CONTENT_SEARCH_MAX_ITEMS + 1 },
+      (_, i) => ({
+        ...validItem,
+        id: `550e8400-e29b-41d4-a716-44665544${String(i).padStart(4, '0')}`,
+        orderIndex: i,
+      }),
+    );
 
     const result = searchContentSchema.safeParse({
       query: 'unit',

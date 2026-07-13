@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
 import type { ArcjetDecision } from 'arcjet';
 
 export const assertArcjetAllowed = (decision: ArcjetDecision): void => {

@@ -9,19 +9,18 @@ import {
 } from '../constants/content-upload.constants';
 
 export type LessonMediaObjectValidationError =
-  | 'missing'
-  | 'invalid_type'
-  | 'empty'
-  | 'too_large';
+  'missing' | 'invalid_type' | 'empty' | 'too_large';
 
 export type LessonMediaObjectValidationResult =
-  | { valid: true; contentType: AllowedVideoContentType | AllowedPdfContentType }
+  | {
+      valid: true;
+      contentType: AllowedVideoContentType | AllowedPdfContentType;
+    }
   | { valid: false; error: LessonMediaObjectValidationError };
 
 const normalizeContentType = (
   contentType: string | undefined,
-): string | undefined =>
-  contentType?.split(';')[0]?.trim().toLowerCase();
+): string | undefined => contentType?.split(';')[0]?.trim().toLowerCase();
 
 const validateObjectMetadata = (
   metadata: ObjectMetadata | null,
@@ -34,17 +33,11 @@ const validateObjectMetadata = (
 
   const contentType = normalizeContentType(metadata.contentType);
 
-  if (
-    !contentType ||
-    !allowedContentTypes.includes(contentType)
-  ) {
+  if (!contentType || !allowedContentTypes.includes(contentType)) {
     return { valid: false, error: 'invalid_type' };
   }
 
-  if (
-    metadata.contentLength === undefined ||
-    metadata.contentLength < 1
-  ) {
+  if (metadata.contentLength === undefined || metadata.contentLength < 1) {
     return { valid: false, error: 'empty' };
   }
 

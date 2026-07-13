@@ -23,11 +23,12 @@ type ArcjetProtectProps = {
 @Injectable()
 export class ArcjetService {
   private readonly logger = new Logger(ArcjetService.name);
-  private readonly profileClients: Map<ArcjetProfile, ArcjetProfileClient> | null;
+  private readonly profileClients: Map<
+    ArcjetProfile,
+    ArcjetProfileClient
+  > | null;
 
-  constructor(
-    private readonly configService: ConfigService<AppEnv, true>,
-  ) {
+  constructor(private readonly configService: ConfigService<AppEnv, true>) {
     const enabled = this.configService.get('ARCJET_ENABLED', { infer: true });
 
     if (!enabled) {
@@ -80,7 +81,10 @@ export class ArcjetService {
 
       return await client.protect(request);
     } catch (error) {
-      this.logger.error(`Arcjet protection check failed for "${profile}"`, error);
+      this.logger.error(
+        `Arcjet protection check failed for "${profile}"`,
+        error,
+      );
       return null;
     }
   }

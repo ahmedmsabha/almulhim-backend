@@ -74,9 +74,11 @@ describe('DownloadsController', () => {
       downloads: [],
     });
 
-    await expect(downloadsController.listMyDownloads(request)).resolves.toEqual({
-      downloads: [],
-    });
+    await expect(downloadsController.listMyDownloads(request)).resolves.toEqual(
+      {
+        downloads: [],
+      },
+    );
 
     expect(downloadsService.listMyDownloadsFromRequest).toHaveBeenCalledWith(
       request,

@@ -166,7 +166,9 @@ export class AdminSubscriptionsService {
   ): Promise<AdminSubscriptionResponse> {
     const subscription = await this.requireSubscription(subscriptionId);
 
-    if (!(PENDING_STATUSES as readonly string[]).includes(subscription.status)) {
+    if (
+      !(PENDING_STATUSES as readonly string[]).includes(subscription.status)
+    ) {
       throw new BadRequestException(
         `Subscription cannot be approved from status '${subscription.status}'`,
       );
@@ -254,8 +256,7 @@ export class AdminSubscriptionsService {
     const target = error.meta?.target;
 
     return (
-      Array.isArray(target) &&
-      target.includes('receipt_transaction_reference')
+      Array.isArray(target) && target.includes('receipt_transaction_reference')
     );
   }
 
@@ -267,7 +268,9 @@ export class AdminSubscriptionsService {
     const validatedInput = this.parseRejectInput(input);
     const subscription = await this.requireSubscription(subscriptionId);
 
-    if (!(REJECTABLE_STATUSES as readonly string[]).includes(subscription.status)) {
+    if (
+      !(REJECTABLE_STATUSES as readonly string[]).includes(subscription.status)
+    ) {
       throw new BadRequestException(
         `Subscription cannot be rejected from status '${subscription.status}'`,
       );
@@ -428,10 +431,7 @@ export class AdminSubscriptionsService {
         throw error;
       }
 
-      this.logger.error(
-        `Failed to load subscription ${subscriptionId}`,
-        error,
-      );
+      this.logger.error(`Failed to load subscription ${subscriptionId}`, error);
       throw error;
     }
   }
@@ -444,7 +444,10 @@ export class AdminSubscriptionsService {
         throw error;
       }
 
-      this.logger.error('Failed to validate reject subscription payload', error);
+      this.logger.error(
+        'Failed to validate reject subscription payload',
+        error,
+      );
       throw error;
     }
   }

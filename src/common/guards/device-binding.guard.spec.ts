@@ -42,7 +42,9 @@ describe('DeviceBindingGuard', () => {
 
   const deviceIdentifier = '550e8400-e29b-41d4-a716-446655440000';
 
-  const createContext = (request: Partial<AuthenticatedRequest>): ExecutionContext =>
+  const createContext = (
+    request: Partial<AuthenticatedRequest>,
+  ): ExecutionContext =>
     ({
       switchToHttp: () => ({
         getRequest: () => request,
@@ -100,7 +102,9 @@ describe('DeviceBindingGuard', () => {
   });
 
   it('throws ForbiddenException when no binding exists', async () => {
-    jest.spyOn(prismaService.deviceBinding, 'findUnique').mockResolvedValue(null);
+    jest
+      .spyOn(prismaService.deviceBinding, 'findUnique')
+      .mockResolvedValue(null);
 
     await expect(
       guard.canActivate(

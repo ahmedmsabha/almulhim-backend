@@ -114,9 +114,8 @@ export class ReceiptVerificationService {
     }
 
     try {
-      const subscription = await this.loadSubscriptionForVerification(
-        subscriptionId,
-      );
+      const subscription =
+        await this.loadSubscriptionForVerification(subscriptionId);
 
       if (!subscription) {
         return;
@@ -189,7 +188,10 @@ export class ReceiptVerificationService {
         duplicateReferenceInUse,
       });
 
-      await this.persistVerificationOutcome(subscription.id, verificationResult);
+      await this.persistVerificationOutcome(
+        subscription.id,
+        verificationResult,
+      );
     } catch (error) {
       this.logger.error(
         `Receipt verification failed for subscription ${subscriptionId}`,
@@ -304,8 +306,8 @@ export class ReceiptVerificationService {
     const notDuplicateReason = input.duplicateReferenceInUse
       ? DUPLICATE_TRANSACTION_REFERENCE_REASON
       : input.analysis.appearsDuplicate
-        ? input.analysis.duplicateReason ??
-          'Receipt appears to duplicate a previous payment'
+        ? (input.analysis.duplicateReason ??
+          'Receipt appears to duplicate a previous payment')
         : null;
 
     const checks = {
@@ -378,11 +380,14 @@ export class ReceiptVerificationService {
           reason: null,
         },
       },
-      notes: 'Receipt AI verification skipped because RECEIPT_AI_ENABLED is false',
+      notes:
+        'Receipt AI verification skipped because RECEIPT_AI_ENABLED is false',
     };
   }
 
-  private buildFailureVerificationResult(error: string): ReceiptVerificationResult {
+  private buildFailureVerificationResult(
+    error: string,
+  ): ReceiptVerificationResult {
     return {
       version: RECEIPT_VERIFICATION_RESULT_VERSION,
       passed: false,
@@ -415,7 +420,9 @@ export class ReceiptVerificationService {
     };
   }
 
-  private async persistSkippedVerification(subscriptionId: string): Promise<void> {
+  private async persistSkippedVerification(
+    subscriptionId: string,
+  ): Promise<void> {
     await this.persistVerificationOutcome(
       subscriptionId,
       this.buildSkippedVerificationResult(),
@@ -557,8 +564,7 @@ export class ReceiptVerificationService {
     const target = error.meta?.target;
 
     return (
-      Array.isArray(target) &&
-      target.includes('receipt_transaction_reference')
+      Array.isArray(target) && target.includes('receipt_transaction_reference')
     );
   }
 

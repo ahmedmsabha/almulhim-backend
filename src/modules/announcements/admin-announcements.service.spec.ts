@@ -61,10 +61,7 @@ describe('AdminAnnouncementsService', () => {
     prismaService = new PrismaService();
     r2StorageService = new R2StorageService({} as never);
     analyticsService = new AnalyticsService({} as never);
-    notificationsService = new NotificationsService(
-      {} as never,
-      {} as never,
-    );
+    notificationsService = new NotificationsService({} as never, {} as never);
     adminAnnouncementsService = new AdminAnnouncementsService(
       prismaService,
       r2StorageService,
@@ -75,7 +72,9 @@ describe('AdminAnnouncementsService', () => {
   });
 
   it('creates a draft announcement', async () => {
-    jest.spyOn(prismaService.announcement, 'create').mockResolvedValue(announcement);
+    jest
+      .spyOn(prismaService.announcement, 'create')
+      .mockResolvedValue(announcement);
 
     const result = await adminAnnouncementsService.create({
       title: 'Update',
@@ -90,7 +89,9 @@ describe('AdminAnnouncementsService', () => {
   });
 
   it('publishes an announcement and notifies the region', async () => {
-    jest.spyOn(prismaService.announcement, 'findUnique').mockResolvedValue(announcement);
+    jest
+      .spyOn(prismaService.announcement, 'findUnique')
+      .mockResolvedValue(announcement);
     jest.spyOn(prismaService.announcement, 'update').mockResolvedValue({
       ...announcement,
       isPublished: true,
@@ -121,7 +122,9 @@ describe('AdminAnnouncementsService', () => {
   });
 
   it('rejects invalid image storage keys on attach', async () => {
-    jest.spyOn(prismaService.announcement, 'findUnique').mockResolvedValue(announcement);
+    jest
+      .spyOn(prismaService.announcement, 'findUnique')
+      .mockResolvedValue(announcement);
 
     await expect(
       adminAnnouncementsService.attachImage(announcementId, {
@@ -131,7 +134,9 @@ describe('AdminAnnouncementsService', () => {
   });
 
   it('throws NotFoundException when announcement is missing', async () => {
-    jest.spyOn(prismaService.announcement, 'findUnique').mockResolvedValue(null);
+    jest
+      .spyOn(prismaService.announcement, 'findUnique')
+      .mockResolvedValue(null);
 
     await expect(
       adminAnnouncementsService.getById(announcementId),

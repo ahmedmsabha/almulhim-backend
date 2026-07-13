@@ -16,9 +16,7 @@ export class MailService {
   private readonly transporter: Transporter | null;
   private readonly fromAddress: string | null;
 
-  constructor(
-    private readonly configService: ConfigService<AppEnv, true>,
-  ) {
+  constructor(private readonly configService: ConfigService<AppEnv, true>) {
     const enabled = this.configService.get('MAIL_ENABLED', { infer: true });
 
     if (!enabled) {
@@ -28,7 +26,8 @@ export class MailService {
       return;
     }
 
-    this.fromAddress = this.configService.get('MAIL_FROM', { infer: true }) ?? null;
+    this.fromAddress =
+      this.configService.get('MAIL_FROM', { infer: true }) ?? null;
 
     this.transporter = nodemailer.createTransport({
       host: this.configService.get('SMTP_HOST', { infer: true }),

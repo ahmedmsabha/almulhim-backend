@@ -114,9 +114,7 @@ export function toLessonSummaryResponse(
   };
 }
 
-export function toLessonVideoResponse(
-  video: LessonVideo,
-): LessonVideoResponse {
+export function toLessonVideoResponse(video: LessonVideo): LessonVideoResponse {
   return {
     id: video.id,
     title: video.title,

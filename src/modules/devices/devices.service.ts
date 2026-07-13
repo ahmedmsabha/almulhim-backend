@@ -10,7 +10,10 @@ import type { DeviceBinding, User } from '../../generated/prisma/client';
 import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { DeviceHashService } from '../../lib/devices/device-hash.service';
 import { PrismaService } from '../../lib/database/prisma.service';
-import { bindDeviceSchema, type BindDeviceInput } from './schemas/device.schemas';
+import {
+  bindDeviceSchema,
+  type BindDeviceInput,
+} from './schemas/device.schemas';
 import {
   toDeviceBindingResponse,
   toDeviceHeartbeatResponse,
@@ -38,14 +41,16 @@ export class DevicesService {
     );
 
     try {
-      const existingBinding = await this.prismaService.deviceBinding.findUnique({
-        where: {
-          userId_deviceType: {
-            userId: user.id,
-            deviceType: validatedInput.deviceType,
+      const existingBinding = await this.prismaService.deviceBinding.findUnique(
+        {
+          where: {
+            userId_deviceType: {
+              userId: user.id,
+              deviceType: validatedInput.deviceType,
+            },
           },
         },
-      });
+      );
 
       if (!existingBinding) {
         try {
@@ -139,7 +144,10 @@ export class DevicesService {
 
       return toDeviceStatusResponse(bindings);
     } catch (error) {
-      this.logger.error(`Failed to load device status for user ${user.id}`, error);
+      this.logger.error(
+        `Failed to load device status for user ${user.id}`,
+        error,
+      );
       throw error;
     }
   }

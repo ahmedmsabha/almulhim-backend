@@ -116,10 +116,7 @@ describe('AdminContentService', () => {
     prismaService = new PrismaService({} as never);
     r2StorageService = new R2StorageService({} as never);
     analyticsService = new AnalyticsService({} as never);
-    notificationsService = new NotificationsService(
-      {} as never,
-      {} as never,
-    );
+    notificationsService = new NotificationsService({} as never, {} as never);
     adminContentService = new AdminContentService(
       prismaService,
       r2StorageService,
@@ -345,7 +342,9 @@ describe('AdminContentService', () => {
     });
 
     it('throws NotFound when the video does not exist', async () => {
-      jest.spyOn(prismaService.lessonVideo, 'findUnique').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.lessonVideo, 'findUnique')
+        .mockResolvedValue(null);
 
       await expect(
         adminContentService.deleteVideo(videoId),

@@ -196,10 +196,12 @@ describe('SubscriptionsService', () => {
 
     beforeEach(() => {
       mockNoOpenSubscriptionOrReceiptReuse();
-      jest.spyOn(prismaService.subscriptionPlan, 'findUnique').mockResolvedValue({
-        id: activePlan.id,
-        isActive: true,
-      });
+      jest
+        .spyOn(prismaService.subscriptionPlan, 'findUnique')
+        .mockResolvedValue({
+          id: activePlan.id,
+          isActive: true,
+        });
       jest.spyOn(r2StorageService, 'headObject').mockResolvedValue({
         contentType: 'image/jpeg',
         contentLength: 1024,
@@ -237,17 +239,16 @@ describe('SubscriptionsService', () => {
         },
         include: { plan: true },
       });
-      expect(analyticsService.captureSubscriptionSubmitted).toHaveBeenCalledWith(
-        studentUser.id,
-        {
-          subscriptionId: subscriptionRow.id,
-          planId: activePlan.id,
-          status: 'pending_review',
-        },
-      );
-      expect(receiptVerificationService.scheduleVerification).toHaveBeenCalledWith(
-        subscriptionRow.id,
-      );
+      expect(
+        analyticsService.captureSubscriptionSubmitted,
+      ).toHaveBeenCalledWith(studentUser.id, {
+        subscriptionId: subscriptionRow.id,
+        planId: activePlan.id,
+        status: 'pending_review',
+      });
+      expect(
+        receiptVerificationService.scheduleVerification,
+      ).toHaveBeenCalledWith(subscriptionRow.id);
     });
 
     it('throws ConflictException when user already has an open subscription', async () => {
@@ -296,12 +297,16 @@ describe('SubscriptionsService', () => {
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
-        new ConflictException('Receipt has already been used for a subscription'),
+        new ConflictException(
+          'Receipt has already been used for a subscription',
+        ),
       );
     });
 
     it('throws NotFoundException when plan does not exist', async () => {
-      jest.spyOn(prismaService.subscriptionPlan, 'findUnique').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.subscriptionPlan, 'findUnique')
+        .mockResolvedValue(null);
 
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
@@ -309,10 +314,12 @@ describe('SubscriptionsService', () => {
     });
 
     it('throws BadRequestException when plan is inactive', async () => {
-      jest.spyOn(prismaService.subscriptionPlan, 'findUnique').mockResolvedValue({
-        id: activePlan.id,
-        isActive: false,
-      });
+      jest
+        .spyOn(prismaService.subscriptionPlan, 'findUnique')
+        .mockResolvedValue({
+          id: activePlan.id,
+          isActive: false,
+        });
 
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
@@ -356,7 +363,9 @@ describe('SubscriptionsService', () => {
 
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
-      ).rejects.toThrow(new BadRequestException('Receipt file was not uploaded'));
+      ).rejects.toThrow(
+        new BadRequestException('Receipt file was not uploaded'),
+      );
     });
 
     it('throws BadRequestException when receipt type is not allowed', async () => {
@@ -367,7 +376,9 @@ describe('SubscriptionsService', () => {
 
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
-      ).rejects.toThrow(new BadRequestException('Receipt file type is not allowed'));
+      ).rejects.toThrow(
+        new BadRequestException('Receipt file type is not allowed'),
+      );
     });
 
     it('throws BadRequestException when receipt exceeds max size', async () => {
@@ -411,7 +422,9 @@ describe('SubscriptionsService', () => {
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
-        new ConflictException('Receipt has already been used for a subscription'),
+        new ConflictException(
+          'Receipt has already been used for a subscription',
+        ),
       );
     });
   });
@@ -441,7 +454,9 @@ describe('SubscriptionsService', () => {
     });
 
     it('throws NotFoundException when no open subscription exists', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(null);
 
       await expect(
         subscriptionsService.getMySubscription(studentUser),

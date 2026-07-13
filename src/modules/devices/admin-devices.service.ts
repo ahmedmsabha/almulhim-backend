@@ -42,7 +42,10 @@ export class AdminDevicesService {
         throw error;
       }
 
-      this.logger.error(`Failed to list device bindings for user ${userId}`, error);
+      this.logger.error(
+        `Failed to list device bindings for user ${userId}`,
+        error,
+      );
       throw error;
     }
   }

@@ -24,7 +24,9 @@ export class DeviceBindingGuard implements CanActivate {
       throw new UnauthorizedException('Authentication required');
     }
 
-    const { deviceIdentifier, deviceType } = parseDeviceHeaders(request.headers);
+    const { deviceIdentifier, deviceType } = parseDeviceHeaders(
+      request.headers,
+    );
     const deviceHash = this.deviceHashService.hash(deviceIdentifier);
 
     try {
@@ -38,7 +40,9 @@ export class DeviceBindingGuard implements CanActivate {
       });
 
       if (!binding) {
-        throw new ForbiddenException('Device is not bound for this device type');
+        throw new ForbiddenException(
+          'Device is not bound for this device type',
+        );
       }
 
       if (binding.deviceHash !== deviceHash) {

@@ -30,10 +30,7 @@ jest.mock('../../lib/ai', () => ({
   },
 }));
 
-import {
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { AiProviderService } from '../../lib/ai';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { ContentService } from './content.service';
@@ -197,7 +194,9 @@ describe('ContentService', () => {
 
   describe('getChapter', () => {
     beforeEach(() => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(null);
     });
 
     it('returns chapter with lesson lock flags', async () => {
@@ -248,7 +247,10 @@ describe('ContentService', () => {
         pdfs: [lessonPdf],
       });
 
-      const result = await contentService.getLesson(studentUser, subscriberLesson.id);
+      const result = await contentService.getLesson(
+        studentUser,
+        subscriberLesson.id,
+      );
 
       expect(result.isLocked).toBe(false);
       expect(result.videos).toEqual([
@@ -269,7 +271,9 @@ describe('ContentService', () => {
     });
 
     it('returns locked lesson with empty media arrays', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(null);
 
       jest.spyOn(prismaService.lesson, 'findFirst').mockResolvedValue({
         ...subscriberLesson,
@@ -277,7 +281,10 @@ describe('ContentService', () => {
         pdfs: [lessonPdf],
       });
 
-      const result = await contentService.getLesson(studentUser, subscriberLesson.id);
+      const result = await contentService.getLesson(
+        studentUser,
+        subscriberLesson.id,
+      );
 
       expect(result.isLocked).toBe(true);
       expect(result.videos).toEqual([]);
@@ -285,7 +292,9 @@ describe('ContentService', () => {
     });
 
     it('throws NotFoundException for unavailable lesson', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(null);
       jest.spyOn(prismaService.lesson, 'findFirst').mockResolvedValue(null);
 
       await expect(
@@ -296,7 +305,9 @@ describe('ContentService', () => {
 
   describe('getTree', () => {
     it('returns nested tree with lock flags', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(null);
       jest.spyOn(prismaService.unit, 'findMany').mockResolvedValue([
         {
           ...gazaUnit,
@@ -344,7 +355,9 @@ describe('ContentService', () => {
     });
 
     it('locks subscriber lessons when subscription is expired', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(null);
 
       jest.spyOn(prismaService.chapter, 'findFirst').mockResolvedValue({
         ...chapter,

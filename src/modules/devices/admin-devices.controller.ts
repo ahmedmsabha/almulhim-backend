@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseUUIDPipe,
-} from '@nestjs/common';
+import { Controller, Delete, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { ArcjetProtect } from '../../common/decorators/arcjet-protect.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { ClerkUserId } from '../../common/decorators/clerk-user-id.decorator';

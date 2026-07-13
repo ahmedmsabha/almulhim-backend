@@ -38,10 +38,7 @@ describe('RolesGuard', () => {
       getAllAndOverride: jest.fn(),
     };
     authService = new AuthService({} as never);
-    guard = new RolesGuard(
-      reflector as unknown as Reflector,
-      authService,
-    );
+    guard = new RolesGuard(reflector as unknown as Reflector, authService);
   });
 
   it('allows public routes', async () => {

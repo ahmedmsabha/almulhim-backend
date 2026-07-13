@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { UserRole } from '../../../generated/prisma/client';
-import { IS_PUBLIC_KEY, ROLES_KEY } from '../../../common/constants/auth-metadata';
+import {
+  IS_PUBLIC_KEY,
+  ROLES_KEY,
+} from '../../../common/constants/auth-metadata';
 import type { AuthenticatedRequest } from '../../../common/types/authenticated-request.type';
 import { AuthService } from '../auth.service';
 

@@ -48,9 +48,7 @@ describe('ArcjetProtectGuard', () => {
   it('allows requests when no profile metadata is set', async () => {
     reflector.get.mockReturnValue(undefined);
 
-    await expect(
-      guard.canActivate(createContext({})),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(createContext({}))).resolves.toBe(true);
     expect(arcjetService.protectProfile).not.toHaveBeenCalled();
   });
 

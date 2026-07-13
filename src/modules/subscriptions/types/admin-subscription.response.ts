@@ -3,7 +3,10 @@ import type {
   SubscriptionPlan,
   User,
 } from '../../../generated/prisma/client';
-import { type SubscriptionPlanSummary, toSubscriptionPlanSummary } from './subscription.response';
+import {
+  type SubscriptionPlanSummary,
+  toSubscriptionPlanSummary,
+} from './subscription.response';
 
 export type AdminStudentSummary = {
   id: string;

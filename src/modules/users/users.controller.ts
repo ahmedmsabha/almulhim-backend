@@ -61,9 +61,7 @@ export class UsersController {
 
   @Roles('admin')
   @Get()
-  async listStudents(
-    @Query() query: unknown,
-  ): Promise<StudentListResponse> {
+  async listStudents(@Query() query: unknown): Promise<StudentListResponse> {
     try {
       return await this.usersService.listStudents(query);
     } catch (error) {

@@ -98,7 +98,9 @@ describe('UsersService', () => {
 
   describe('getCurrentUser', () => {
     it('returns the registered user profile', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(studentUser);
+      jest
+        .spyOn(prismaService.user, 'findUnique')
+        .mockResolvedValue(studentUser);
 
       await expect(usersService.getCurrentUser('user_123')).resolves.toEqual({
         id: studentUser.id,
@@ -176,7 +178,9 @@ describe('UsersService', () => {
     });
 
     it('updates an existing student profile when clerkId already exists', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(studentUser);
+      jest
+        .spyOn(prismaService.user, 'findUnique')
+        .mockResolvedValue(studentUser);
       jest.spyOn(prismaService.user, 'update').mockResolvedValue({
         ...studentUser,
         fullName: 'Updated Name',
@@ -256,7 +260,9 @@ describe('UsersService', () => {
   describe('listStudents', () => {
     it('returns a paginated student list with defaults when no params are provided', async () => {
       jest.spyOn(prismaService.user, 'count').mockResolvedValue(1);
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([studentListRow]);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([studentListRow]);
 
       await expect(usersService.listStudents()).resolves.toEqual({
         students: [listItem],
@@ -306,7 +312,9 @@ describe('UsersService', () => {
         deactivatedAt: new Date('2026-07-12T10:00:00.000Z'),
       };
       jest.spyOn(prismaService.user, 'count').mockResolvedValue(1);
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([deactivatedRow]);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([deactivatedRow]);
 
       await expect(
         usersService.listStudents({ includeDeactivated: 'true' }),
@@ -331,7 +339,9 @@ describe('UsersService', () => {
 
     it('applies case-insensitive search across name, email, phone, and telegram', async () => {
       jest.spyOn(prismaService.user, 'count').mockResolvedValue(1);
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([studentListRow]);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([studentListRow]);
 
       await usersService.listStudents({ q: 'Sara' });
 
@@ -353,7 +363,9 @@ describe('UsersService', () => {
 
     it('filters by region', async () => {
       jest.spyOn(prismaService.user, 'count').mockResolvedValue(1);
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([studentListRow]);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([studentListRow]);
 
       await usersService.listStudents({ region: 'gaza' });
 
@@ -404,7 +416,9 @@ describe('UsersService', () => {
         .spyOn(prismaService, '$queryRaw')
         .mockResolvedValue([{ id: studentUser.id }]);
       jest.spyOn(prismaService.user, 'count').mockResolvedValue(1);
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([studentListRow]);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([studentListRow]);
 
       await usersService.listStudents({ status: 'active' });
 
@@ -422,7 +436,9 @@ describe('UsersService', () => {
 
     it('applies pagination skip/take and returns total after filters', async () => {
       jest.spyOn(prismaService.user, 'count').mockResolvedValue(25);
-      jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([studentListRow]);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([studentListRow]);
 
       await expect(
         usersService.listStudents({ page: '2', pageSize: '5' }),
@@ -445,14 +461,14 @@ describe('UsersService', () => {
       jest.spyOn(prismaService.user, 'count').mockResolvedValue(0);
       jest.spyOn(prismaService.user, 'findMany').mockResolvedValue([]);
 
-      await expect(
-        usersService.listStudents({ q: 'nobody' }),
-      ).resolves.toEqual({
-        students: [],
-        total: 0,
-        page: 1,
-        pageSize: 10,
-      });
+      await expect(usersService.listStudents({ q: 'nobody' })).resolves.toEqual(
+        {
+          students: [],
+          total: 0,
+          page: 1,
+          pageSize: 10,
+        },
+      );
     });
 
     it('throws ZodError for invalid query values', async () => {
@@ -464,7 +480,9 @@ describe('UsersService', () => {
 
   describe('getStudentById', () => {
     it('returns the student list-row DTO with subscription status', async () => {
-      jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(studentListRow);
+      jest
+        .spyOn(prismaService.user, 'findFirst')
+        .mockResolvedValue(studentListRow);
 
       await expect(
         usersService.getStudentById(studentUser.id),
@@ -510,9 +528,9 @@ describe('UsersService', () => {
     it('throws NotFoundException when the user is an admin', async () => {
       jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(null);
 
-      await expect(
-        usersService.getStudentById(studentUser.id),
-      ).rejects.toThrow(new NotFoundException('Student not found'));
+      await expect(usersService.getStudentById(studentUser.id)).rejects.toThrow(
+        new NotFoundException('Student not found'),
+      );
 
       expect(prismaService.user.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -560,7 +578,9 @@ describe('UsersService', () => {
     });
 
     it('rolls back Nest deactivatedAt when Clerk ban fails', async () => {
-      jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(studentUser);
+      jest
+        .spyOn(prismaService.user, 'findFirst')
+        .mockResolvedValue(studentUser);
       jest.spyOn(prismaService.user, 'update').mockResolvedValue(studentUser);
       jest
         .spyOn(clerkService, 'banUser')
@@ -658,16 +678,18 @@ describe('UsersService', () => {
 
   describe('deleteStudent', () => {
     it('cascades Nest delete then deletes the Clerk user', async () => {
-      jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(studentUser);
+      jest
+        .spyOn(prismaService.user, 'findFirst')
+        .mockResolvedValue(studentUser);
       jest.spyOn(prismaService.user, 'delete').mockResolvedValue(studentUser);
       jest.spyOn(clerkService, 'deleteUser').mockResolvedValue(undefined);
 
-      await expect(
-        usersService.deleteStudent(studentUser.id),
-      ).resolves.toEqual({
-        deleted: true,
-        userId: studentUser.id,
-      });
+      await expect(usersService.deleteStudent(studentUser.id)).resolves.toEqual(
+        {
+          deleted: true,
+          userId: studentUser.id,
+        },
+      );
 
       expect(prismaService.user.delete).toHaveBeenCalledWith({
         where: { id: studentUser.id },
@@ -676,7 +698,9 @@ describe('UsersService', () => {
     });
 
     it('returns 502 when Nest delete succeeds but Clerk delete fails', async () => {
-      jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(studentUser);
+      jest
+        .spyOn(prismaService.user, 'findFirst')
+        .mockResolvedValue(studentUser);
       jest.spyOn(prismaService.user, 'delete').mockResolvedValue(studentUser);
       jest
         .spyOn(clerkService, 'deleteUser')
@@ -693,9 +717,9 @@ describe('UsersService', () => {
     it('cannot delete an admin (404)', async () => {
       jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(null);
 
-      await expect(
-        usersService.deleteStudent(studentUser.id),
-      ).rejects.toThrow(new NotFoundException('Student not found'));
+      await expect(usersService.deleteStudent(studentUser.id)).rejects.toThrow(
+        new NotFoundException('Student not found'),
+      );
       expect(prismaService.user.delete).not.toHaveBeenCalled();
     });
   });

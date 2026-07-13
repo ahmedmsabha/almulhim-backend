@@ -6,10 +6,7 @@ import {
 } from '../constants/announcement-upload.constants';
 
 export type AnnouncementImageValidationError =
-  | 'missing'
-  | 'invalid_type'
-  | 'empty'
-  | 'too_large';
+  'missing' | 'invalid_type' | 'empty' | 'too_large';
 
 export type AnnouncementImageValidationResult =
   | { valid: true; contentType: AllowedAnnouncementImageContentType }
@@ -22,10 +19,7 @@ export const validateAnnouncementImageMetadata = (
     return { valid: false, error: 'missing' };
   }
 
-  const contentType = metadata.contentType
-    ?.split(';')[0]
-    ?.trim()
-    .toLowerCase();
+  const contentType = metadata.contentType?.split(';')[0]?.trim().toLowerCase();
 
   if (
     !contentType ||

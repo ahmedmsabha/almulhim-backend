@@ -64,7 +64,9 @@ describe('DevicesService', () => {
   });
 
   it('creates a binding when the slot is empty', async () => {
-    jest.spyOn(prismaService.deviceBinding, 'findUnique').mockResolvedValue(null);
+    jest
+      .spyOn(prismaService.deviceBinding, 'findUnique')
+      .mockResolvedValue(null);
     jest.spyOn(prismaService.deviceBinding, 'create').mockResolvedValue({
       id: 'binding-id',
       userId: user.id,
@@ -125,7 +127,8 @@ describe('DevicesService', () => {
   });
 
   it('handles concurrent bind create races idempotently', async () => {
-    jest.spyOn(prismaService.deviceBinding, 'findUnique')
+    jest
+      .spyOn(prismaService.deviceBinding, 'findUnique')
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         id: 'binding-id',

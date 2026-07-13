@@ -233,7 +233,10 @@ export class AdminAnnouncementsService {
     try {
       return createAnnouncementSchema.parse(input);
     } catch (error) {
-      this.logger.error('Failed to validate create announcement payload', error);
+      this.logger.error(
+        'Failed to validate create announcement payload',
+        error,
+      );
       throw error;
     }
   }
@@ -242,14 +245,15 @@ export class AdminAnnouncementsService {
     try {
       return updateAnnouncementSchema.parse(input);
     } catch (error) {
-      this.logger.error('Failed to validate update announcement payload', error);
+      this.logger.error(
+        'Failed to validate update announcement payload',
+        error,
+      );
       throw error;
     }
   }
 
-  private parseImageUploadUrlInput(
-    input: unknown,
-  ): CreateImageUploadUrlInput {
+  private parseImageUploadUrlInput(input: unknown): CreateImageUploadUrlInput {
     try {
       return createImageUploadUrlSchema.parse(input);
     } catch (error) {
@@ -331,10 +335,7 @@ export class AdminAnnouncementsService {
         throw error;
       }
 
-      this.logger.error(
-        `Failed to load announcement ${announcementId}`,
-        error,
-      );
+      this.logger.error(`Failed to load announcement ${announcementId}`, error);
       throw error;
     }
   }
