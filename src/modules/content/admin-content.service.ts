@@ -83,6 +83,7 @@ import {
   type AdminUnitSummaryResponse,
   type AdminVideoResponse,
   type MediaUploadUrlResponse,
+  type MediaViewUrlResponse,
 } from './types/admin-content.response';
 import {
   lessonMediaValidationErrorMessage,
@@ -109,6 +110,8 @@ const MEDIA_ORDER = [
   { sortOrder: 'asc' as const },
   { createdAt: 'asc' as const },
 ];
+
+const MEDIA_VIEW_URL_EXPIRES_SECONDS = 15 * 60;
 
 @Injectable()
 export class AdminContentService {
@@ -722,6 +725,59 @@ export class AdminContentService {
       return toAdminPdfResponse(pdf);
     } catch (error) {
       this.logger.error(`Failed to update PDF ${pdfId}`, error);
+      throw error;
+    }
+  }
+
+  async getVideoPlaybackUrl(videoId: string): Promise<MediaViewUrlResponse> {
+    const video = await this.getVideoOrThrow(videoId);
+
+    try {
+      const exists = await this.r2StorageService.objectExists(video.storageKey);
+      if (!exists) {
+        throw new NotFoundException('Video file not found in storage');
+      }
+
+      const url = await this.r2StorageService.createSignedGetUrl({
+        key: video.storageKey,
+        expiresInSeconds: MEDIA_VIEW_URL_EXPIRES_SECONDS,
+      });
+
+      return { url, expiresInSeconds: MEDIA_VIEW_URL_EXPIRES_SECONDS };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      this.logger.error(
+        `Failed to generate playback URL for video ${videoId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async getPdfViewUrl(pdfId: string): Promise<MediaViewUrlResponse> {
+    const pdf = await this.getPdfOrThrow(pdfId);
+
+    try {
+      const exists = await this.r2StorageService.objectExists(pdf.storageKey);
+      if (!exists) {
+        throw new NotFoundException('PDF file not found in storage');
+      }
+
+      const url = await this.r2StorageService.createSignedGetUrl({
+        key: pdf.storageKey,
+        expiresInSeconds: MEDIA_VIEW_URL_EXPIRES_SECONDS,
+      });
+
+      return { url, expiresInSeconds: MEDIA_VIEW_URL_EXPIRES_SECONDS };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      this.logger.error(`Failed to generate view URL for PDF ${pdfId}`, error);
       throw error;
     }
   }

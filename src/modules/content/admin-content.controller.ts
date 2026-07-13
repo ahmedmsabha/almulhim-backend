@@ -23,6 +23,7 @@ import type {
   AdminUnitSummaryResponse,
   AdminVideoResponse,
   MediaUploadUrlResponse,
+  MediaViewUrlResponse,
 } from './types/admin-content.response';
 
 @Roles('admin')
@@ -189,6 +190,14 @@ export class AdminContentController {
   }
 
   @ArcjetProtect('admin-mutation')
+  @Get('videos/:id/playback-url')
+  async getVideoPlaybackUrl(
+    @Param('id', ParseUUIDPipe) videoId: string,
+  ): Promise<MediaViewUrlResponse> {
+    return this.adminContentService.getVideoPlaybackUrl(videoId);
+  }
+
+  @ArcjetProtect('admin-mutation')
   @Patch('videos/:id')
   async updateVideo(
     @Param('id', ParseUUIDPipe) videoId: string,
@@ -227,6 +236,14 @@ export class AdminContentController {
     return this.handleWrite(() =>
       this.adminContentService.attachPdf(lessonId, body),
     );
+  }
+
+  @ArcjetProtect('admin-mutation')
+  @Get('pdfs/:id/view-url')
+  async getPdfViewUrl(
+    @Param('id', ParseUUIDPipe) pdfId: string,
+  ): Promise<MediaViewUrlResponse> {
+    return this.adminContentService.getPdfViewUrl(pdfId);
   }
 
   @ArcjetProtect('admin-mutation')

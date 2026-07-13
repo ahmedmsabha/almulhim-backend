@@ -85,6 +85,11 @@ export type MediaUploadUrlResponse = {
   expiresInSeconds: number;
 };
 
+export type MediaViewUrlResponse = {
+  url: string;
+  expiresInSeconds: number;
+};
+
 const toIsoString = (value: Date | null): string | null =>
   value ? value.toISOString() : null;
 

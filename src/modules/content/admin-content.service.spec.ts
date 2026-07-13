@@ -38,7 +38,9 @@ jest.mock('../../lib/database/prisma.service', () => ({
 jest.mock('../../lib/storage/r2-storage.service', () => ({
   R2StorageService: class MockR2StorageService {
     createSignedPutUrl = jest.fn();
+    createSignedGetUrl = jest.fn();
     headObject = jest.fn();
+    objectExists = jest.fn();
     deleteObject = jest.fn();
   },
 }));
@@ -348,6 +350,86 @@ describe('AdminContentService', () => {
 
       await expect(
         adminContentService.deleteVideo(videoId),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('getVideoPlaybackUrl', () => {
+    const videoId = '550e8400-e29b-41d4-a716-446655440040';
+    const storageKey = `videos/${lessonId}/550e8400-e29b-41d4-a716-446655440088.mp4`;
+
+    it('returns a signed GET URL for the video', async () => {
+      jest.spyOn(prismaService.lessonVideo, 'findUnique').mockResolvedValue({
+        id: videoId,
+        storageKey,
+      } as never);
+      jest.spyOn(r2StorageService, 'objectExists').mockResolvedValue(true);
+      jest
+        .spyOn(r2StorageService, 'createSignedGetUrl')
+        .mockResolvedValue('https://r2.example.com/video-signed');
+
+      const result = await adminContentService.getVideoPlaybackUrl(videoId);
+
+      expect(result.url).toBe('https://r2.example.com/video-signed');
+      expect(result.expiresInSeconds).toBe(15 * 60);
+      expect(r2StorageService.createSignedGetUrl).toHaveBeenCalledWith({
+        key: storageKey,
+        expiresInSeconds: 15 * 60,
+      });
+    });
+
+    it('throws NotFound when the video does not exist', async () => {
+      jest
+        .spyOn(prismaService.lessonVideo, 'findUnique')
+        .mockResolvedValue(null);
+
+      await expect(
+        adminContentService.getVideoPlaybackUrl(videoId),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws NotFound when the object is missing in R2', async () => {
+      jest.spyOn(prismaService.lessonVideo, 'findUnique').mockResolvedValue({
+        id: videoId,
+        storageKey,
+      } as never);
+      jest.spyOn(r2StorageService, 'objectExists').mockResolvedValue(false);
+
+      await expect(
+        adminContentService.getVideoPlaybackUrl(videoId),
+      ).rejects.toThrow(new NotFoundException('Video file not found in storage'));
+    });
+  });
+
+  describe('getPdfViewUrl', () => {
+    const pdfId = '550e8400-e29b-41d4-a716-446655440050';
+    const storageKey = `pdfs/${lessonId}/550e8400-e29b-41d4-a716-446655440099.pdf`;
+
+    it('returns a signed GET URL for the PDF', async () => {
+      jest.spyOn(prismaService.lessonPdf, 'findUnique').mockResolvedValue({
+        id: pdfId,
+        storageKey,
+      } as never);
+      jest.spyOn(r2StorageService, 'objectExists').mockResolvedValue(true);
+      jest
+        .spyOn(r2StorageService, 'createSignedGetUrl')
+        .mockResolvedValue('https://r2.example.com/pdf-signed');
+
+      const result = await adminContentService.getPdfViewUrl(pdfId);
+
+      expect(result.url).toBe('https://r2.example.com/pdf-signed');
+      expect(result.expiresInSeconds).toBe(15 * 60);
+      expect(r2StorageService.createSignedGetUrl).toHaveBeenCalledWith({
+        key: storageKey,
+        expiresInSeconds: 15 * 60,
+      });
+    });
+
+    it('throws NotFound when the PDF does not exist', async () => {
+      jest.spyOn(prismaService.lessonPdf, 'findUnique').mockResolvedValue(null);
+
+      await expect(
+        adminContentService.getPdfViewUrl(pdfId),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
