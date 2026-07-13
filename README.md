@@ -207,7 +207,7 @@ Clients already loaded their authorized tree (`GET /content/tree` or `GET /conte
 | PATCH          | `/subscriptions/:id/suspend`              | Suspend active subscription                                                                    |
 | GET/PATCH/POST | `/content/admin/*`                        | Content CRUD, publish, media upload                                                            |
 | GET/PATCH/POST | `/announcements/admin/*`                  | Announcement CRUD, publish, image upload                                                       |
-| GET/PATCH      | `/support/admin/requests/*`               | Support list, reply, close                                                                     |
+| GET/PATCH      | `/support/admin/requests/*`               | Support list (`?status=` / `?q=`), reply, close                                                |
 | GET/DELETE     | `/devices/admin/users/:userId/bindings/*` | View or reset device bindings                                                                  |
 | GET            | `/analytics/admin/dashboard`              | Aggregate dashboard stats (students, subscriptions, support, growth, regions, recent activity) |
 

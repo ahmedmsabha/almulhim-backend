@@ -61,8 +61,46 @@ describe('AdminSupportService', () => {
     adminSupportService = new AdminSupportService(prismaService, mailService);
   });
 
+  it('lists requests filtered by optional q across subject and student fields', async () => {
+    jest
+      .spyOn(prismaService.supportRequest, 'findMany')
+      .mockResolvedValue([openRequest]);
+
+    const result = await adminSupportService.listRequests({ q: 'Help' });
+
+    expect(prismaService.supportRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            expect.objectContaining({
+              subject: expect.objectContaining({ contains: 'Help' }),
+            }),
+          ]),
+        }),
+      }),
+    );
+    expect(result.requests).toHaveLength(1);
+    expect(result.requests[0]?.id).toBe(requestId);
+  });
+
+  it('lists requests filtered by status alone', async () => {
+    jest
+      .spyOn(prismaService.supportRequest, 'findMany')
+      .mockResolvedValue([openRequest]);
+
+    await adminSupportService.listRequests({ status: 'open' });
+
+    expect(prismaService.supportRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: 'open' },
+      }),
+    );
+  });
+
   it('replies to an open request and marks it reviewed', async () => {
-    jest.spyOn(prismaService.supportRequest, 'findUnique').mockResolvedValue(openRequest);
+    jest
+      .spyOn(prismaService.supportRequest, 'findUnique')
+      .mockResolvedValue(openRequest);
     jest.spyOn(prismaService.supportRequest, 'update').mockResolvedValue({
       ...openRequest,
       status: 'reviewed',
@@ -92,7 +130,9 @@ describe('AdminSupportService', () => {
   });
 
   it('throws NotFoundException when request is missing', async () => {
-    jest.spyOn(prismaService.supportRequest, 'findUnique').mockResolvedValue(null);
+    jest
+      .spyOn(prismaService.supportRequest, 'findUnique')
+      .mockResolvedValue(null);
 
     await expect(
       adminSupportService.getRequest(requestId),

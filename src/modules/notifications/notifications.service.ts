@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ZodError } from 'zod';
 import type { AppEnv } from '../../config/env.schema';
@@ -102,7 +98,11 @@ export class NotificationsService {
         `Push stub: ${bindings.length} mobile token(s) ready for ${params.type} ${params.entityId}`,
       );
     } catch (error) {
-      this.logger.error('notifyRegion failed', error);
+      // Must stay visible in Nest logs — publish still succeeds when this path fails.
+      this.logger.error(
+        'notifyRegion failed',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
   }
 
@@ -276,7 +276,10 @@ export class NotificationsService {
     try {
       return registerPushTokenSchema.parse(input);
     } catch (error) {
-      this.logger.error('Failed to validate register push token payload', error);
+      this.logger.error(
+        'Failed to validate register push token payload',
+        error,
+      );
       throw error;
     }
   }

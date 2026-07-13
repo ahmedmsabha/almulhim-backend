@@ -28,16 +28,42 @@ export class AdminSupportService {
     private readonly mailService: MailService,
   ) {}
 
-  async listRequests(
-    query: unknown,
-  ): Promise<AdminSupportRequestListResponse> {
+  async listRequests(query: unknown): Promise<AdminSupportRequestListResponse> {
     const validatedQuery = this.parseListQuery(query);
 
     try {
       const requests = await this.prismaService.supportRequest.findMany({
-        where: validatedQuery.status
-          ? { status: validatedQuery.status }
-          : undefined,
+        where: {
+          ...(validatedQuery.status ? { status: validatedQuery.status } : {}),
+          ...(validatedQuery.q
+            ? {
+                OR: [
+                  {
+                    subject: {
+                      contains: validatedQuery.q,
+                      mode: 'insensitive' as const,
+                    },
+                  },
+                  {
+                    user: {
+                      fullName: {
+                        contains: validatedQuery.q,
+                        mode: 'insensitive' as const,
+                      },
+                    },
+                  },
+                  {
+                    user: {
+                      email: {
+                        contains: validatedQuery.q,
+                        mode: 'insensitive' as const,
+                      },
+                    },
+                  },
+                ],
+              }
+            : {}),
+        },
         include: { user: true },
         orderBy: { createdAt: 'desc' },
       });
@@ -79,7 +105,10 @@ export class AdminSupportService {
 
       return toAdminSupportRequestResponse(updated);
     } catch (error) {
-      this.logger.error(`Failed to reply to support request ${requestId}`, error);
+      this.logger.error(
+        `Failed to reply to support request ${requestId}`,
+        error,
+      );
       throw error;
     }
   }
@@ -125,7 +154,9 @@ export class AdminSupportService {
 
   private assertCanReply(status: SupportRequestStatus): void {
     if (status === 'closed') {
-      throw new BadRequestException('Closed support requests cannot be replied to');
+      throw new BadRequestException(
+        'Closed support requests cannot be replied to',
+      );
     }
   }
 

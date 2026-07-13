@@ -19,6 +19,7 @@ export type ReplySupportRequestInput = z.infer<
 
 export const listSupportRequestsQuerySchema = z.object({
   status: z.enum(['open', 'reviewed', 'closed']).optional(),
+  q: z.string().trim().min(1).max(200).optional(),
 });
 
 export type ListSupportRequestsQueryInput = z.infer<
