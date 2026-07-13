@@ -6,7 +6,10 @@ import {
   Post,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
-import { ClerkUserId } from '../../common/decorators/clerk-user-id.decorator';
+import { ArcjetProtect } from '../../common/decorators/arcjet-protect.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequiresRegistration } from '../../common/decorators/requires-registration.decorator';
+import type { User } from '../../generated/prisma/client';
 import { SubscriptionsService } from './subscriptions.service';
 import type {
   ReceiptUploadUrlResponse,
@@ -14,19 +17,18 @@ import type {
 } from './types/subscription.response';
 
 @Controller('subscriptions')
+@RequiresRegistration({ studentOnly: true })
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
+  @ArcjetProtect('receipt-upload-url')
   @Post('receipt-upload-url')
   async createReceiptUploadUrl(
-    @ClerkUserId() clerkUserId: string,
+    @CurrentUser() user: User,
     @Body() body: unknown,
   ): Promise<ReceiptUploadUrlResponse> {
     try {
-      return await this.subscriptionsService.createReceiptUploadUrl(
-        clerkUserId,
-        body,
-      );
+      return await this.subscriptionsService.createReceiptUploadUrl(user, body);
     } catch (error) {
       if (error instanceof ZodError) {
         throw new BadRequestException({
@@ -39,16 +41,14 @@ export class SubscriptionsController {
     }
   }
 
+  @ArcjetProtect('receipt-submit')
   @Post()
   async submitSubscription(
-    @ClerkUserId() clerkUserId: string,
+    @CurrentUser() user: User,
     @Body() body: unknown,
   ): Promise<SubscriptionResponse> {
     try {
-      return await this.subscriptionsService.submitSubscription(
-        clerkUserId,
-        body,
-      );
+      return await this.subscriptionsService.submitSubscription(user, body);
     } catch (error) {
       if (error instanceof ZodError) {
         throw new BadRequestException({
@@ -63,8 +63,8 @@ export class SubscriptionsController {
 
   @Get('me')
   async getMySubscription(
-    @ClerkUserId() clerkUserId: string,
+    @CurrentUser() user: User,
   ): Promise<SubscriptionResponse> {
-    return this.subscriptionsService.getMySubscription(clerkUserId);
+    return this.subscriptionsService.getMySubscription(user);
   }
 }

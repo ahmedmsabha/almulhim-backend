@@ -2,20 +2,18 @@ import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { ZodError } from 'zod';
-import { PostHogService } from '../../lib/posthog/posthog.service';
+import type { User } from '../../generated/prisma/client';
+import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
 import { PrismaService } from '../../lib/database/prisma.service';
 import {
-  ALLOWED_RECEIPT_CONTENT_TYPES,
   buildReceiptStorageKeyPattern,
-  MAX_RECEIPT_SIZE_BYTES,
   OPEN_SUBSCRIPTION_STATUSES,
   RECEIPT_CONTENT_TYPE_EXTENSION,
   RECEIPT_KEY_PREFIX,
@@ -30,11 +28,16 @@ import {
   submitSubscriptionSchema,
   type SubmitSubscriptionInput,
 } from './schemas/submit-subscription.schema';
+import { ReceiptVerificationService } from './receipt-verification.service';
 import {
   toSubscriptionResponse,
   type ReceiptUploadUrlResponse,
   type SubscriptionResponse,
 } from './types/subscription.response';
+import {
+  receiptValidationErrorMessage,
+  validateReceiptObjectMetadata,
+} from './utils/receipt-object.validation';
 
 @Injectable()
 export class SubscriptionsService {
@@ -43,14 +46,14 @@ export class SubscriptionsService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly r2StorageService: R2StorageService,
-    private readonly postHogService: PostHogService,
+    private readonly analyticsService: AnalyticsService,
+    private readonly receiptVerificationService: ReceiptVerificationService,
   ) {}
 
   async createReceiptUploadUrl(
-    clerkId: string,
+    user: User,
     input: unknown,
   ): Promise<ReceiptUploadUrlResponse> {
-    const user = await this.requireRegisteredUser(clerkId);
     await this.assertNoOpenSubscription(user.id);
     const validatedInput = this.parseReceiptUploadUrlInput(input);
     const receiptStorageKey = this.buildReceiptStorageKey(
@@ -80,10 +83,9 @@ export class SubscriptionsService {
   }
 
   async submitSubscription(
-    clerkId: string,
+    user: User,
     input: unknown,
   ): Promise<SubscriptionResponse> {
-    const user = await this.requireRegisteredUser(clerkId);
     const validatedInput = this.parseSubmitSubscriptionInput(input);
 
     await this.assertNoOpenSubscription(user.id);
@@ -104,11 +106,13 @@ export class SubscriptionsService {
         include: { plan: true },
       });
 
-      this.postHogService.capture(user.id, 'subscription_submitted', {
+      this.analyticsService.captureSubscriptionSubmitted(user.id, {
         subscriptionId: subscription.id,
         planId: subscription.planId,
         status: subscription.status,
       });
+
+      this.receiptVerificationService.scheduleVerification(subscription.id);
 
       return toSubscriptionResponse(subscription);
     } catch (error) {
@@ -127,9 +131,7 @@ export class SubscriptionsService {
     }
   }
 
-  async getMySubscription(clerkId: string): Promise<SubscriptionResponse> {
-    const user = await this.requireRegisteredUser(clerkId);
-
+  async getMySubscription(user: User): Promise<SubscriptionResponse> {
     try {
       const subscription = await this.prismaService.subscription.findFirst({
         where: {
@@ -146,39 +148,12 @@ export class SubscriptionsService {
 
       return toSubscriptionResponse(subscription);
     } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
+      if (error instanceof NotFoundException) {
         throw error;
       }
 
       this.logger.error(
         `Failed to load open subscription for user ${user.id}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  private async requireRegisteredUser(clerkId: string) {
-    try {
-      const user = await this.prismaService.user.findUnique({
-        where: { clerkId },
-      });
-
-      if (!user) {
-        throw new ForbiddenException('User is not registered');
-      }
-
-      return user;
-    } catch (error) {
-      if (error instanceof ForbiddenException) {
-        throw error;
-      }
-
-      this.logger.error(
-        `Failed to resolve registered user for clerkId ${clerkId}`,
         error,
       );
       throw error;
@@ -329,34 +304,12 @@ export class SubscriptionsService {
     try {
       const metadata =
         await this.r2StorageService.headObject(receiptStorageKey);
+      const validation = validateReceiptObjectMetadata(metadata);
 
-      if (!metadata) {
-        throw new BadRequestException('Receipt file was not uploaded');
-      }
-
-      const contentType = metadata.contentType
-        ?.split(';')[0]
-        ?.trim()
-        .toLowerCase();
-
-      if (
-        !contentType ||
-        !(ALLOWED_RECEIPT_CONTENT_TYPES as readonly string[]).includes(
-          contentType,
-        )
-      ) {
-        throw new BadRequestException('Receipt file type is not allowed');
-      }
-
-      if (
-        metadata.contentLength === undefined ||
-        metadata.contentLength < 1
-      ) {
-        throw new BadRequestException('Receipt file was not uploaded');
-      }
-
-      if (metadata.contentLength > MAX_RECEIPT_SIZE_BYTES) {
-        throw new BadRequestException('Receipt file exceeds maximum size');
+      if (!validation.valid) {
+        throw new BadRequestException(
+          receiptValidationErrorMessage(validation.error),
+        );
       }
     } catch (error) {
       if (error instanceof BadRequestException) {

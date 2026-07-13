@@ -39,12 +39,15 @@
 │   │   ├── types/
 │   │   └── utils/
 │   ├── lib/
+│   │   ├── ai/
+│   │   ├── analytics/
 │   │   ├── arcjet/
 │   │   ├── clerk/
 │   │   ├── database/
+│   │   ├── devices/
+│   │   ├── mail/
 │   │   ├── posthog/
 │   │   └── storage/
-│   │   └── mail/
 │   └── modules/
 │       ├── auth/
 │       ├── users/
@@ -54,8 +57,8 @@
 │       ├── support/
 │       ├── devices/
 │       ├── downloads/
+│       ├── notifications/
 │       ├── analytics/
-│       ├── admin/
 │       └── health/
 └── package.json
 ```
@@ -87,7 +90,11 @@ Examples:
 - `src/lib/clerk` for Clerk verification
 - `src/lib/storage` for R2
 - `src/lib/posthog` for backend analytics
+- `src/lib/analytics` for typed lifecycle event capture
 - `src/lib/arcjet` for protection wiring
+- `src/lib/ai` for receipt verification
+- `src/lib/mail` for support email delivery
+- `src/lib/devices` for device hash utilities
 
 ### `src/common/*`
 
@@ -95,11 +102,13 @@ Own shared cross-cutting utilities only.
 
 Examples:
 
-- guards
+- generic guards (`ClerkAuthGuard`, `ArcjetProtectGuard`, `DeviceBindingGuard`)
 - decorators
 - exception filters
 - response serializers
 - request context helpers
+
+Auth-specific guards (`RegisteredUserGuard`, `RolesGuard`) live in `src/modules/auth/guards/` because they depend on `AuthService`.
 
 ---
 
@@ -132,6 +141,7 @@ Examples:
 - lesson videos
 - lesson PDFs
 - region and access filtering
+- shared AI content search (`POST /content/search`) over client-supplied authorized items
 
 ### `announcements`
 
@@ -155,14 +165,19 @@ Examples:
 - download metadata tracking
 - revocation checks
 
+### `notifications`
+
+- in-app notification inbox per student
+- region-targeted fan-out on lesson/announcement publish (`notifyRegion`)
+- optional Expo push token registration on mobile `DeviceBinding` (send path stubbed until Mobile exists)
+
+Admin routes are colocated in feature modules (`AdminContentController`, `AdminSubscriptionsController`, etc.) — there is no standalone `admin` module.
+
 ### `analytics`
 
-- backend PostHog events only
-- operational counters if needed
-
-### `admin`
-
-- admin-only orchestration endpoints across modules
+- global `src/lib/analytics/` wraps PostHog for typed backend lifecycle events
+- feature module `src/modules/analytics/` exposes admin dashboard aggregates (`GET /analytics/admin/dashboard`)
+- operational logging remains standard NestJS `Logger` usage
 
 ### `mail and support`
 
@@ -177,9 +192,9 @@ Examples:
 
 ```txt
 HTTP request
-  -> Nest middleware / guards
   -> Clerk verification
-  -> Arcjet protection where applicable
+  -> Arcjet protection where applicable (@ArcjetProtect metadata)
+  -> registration / role / device guards
   -> controller
   -> zod validation
   -> service

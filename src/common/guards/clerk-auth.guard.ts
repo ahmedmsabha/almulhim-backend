@@ -4,8 +4,10 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { ClerkService } from '../../lib/clerk/clerk.service';
+import type { AppEnv } from '../../config/env.schema';
 import { IS_PUBLIC_KEY } from '../constants/auth-metadata';
 import type { AuthenticatedRequest } from '../types/authenticated-request.type';
 import { extractBearerToken } from '../utils/extract-bearer-token';
@@ -16,6 +18,7 @@ export class ClerkAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly clerkService: ClerkService,
+    private readonly configService: ConfigService<AppEnv, true>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,7 +39,14 @@ export class ClerkAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.clerkService.verifyBearerToken(token);
+      const authorizedParties = this.configService.get('CLERK_AUTHORIZED_PARTIES', {
+        infer: true,
+      });
+
+      const payload = await this.clerkService.verifyBearerToken(token, {
+        authorizedParties:
+          authorizedParties.length > 0 ? authorizedParties : undefined,
+      });
       const clerkUserId = payload.sub;
 
       if (!clerkUserId) {

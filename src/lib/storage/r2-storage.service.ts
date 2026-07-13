@@ -48,6 +48,9 @@ export class R2StorageService {
       infer: true,
     });
 
+    // R2 does not fully support AWS SDK v3 default flexible checksums.
+    // Leaving them on embeds `x-amz-checksum-*` into presigned PUT URLs and
+    // can cause browser/client uploads to fail with 403 Access Denied.
     this.client = new S3Client({
       region: 'auto',
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
@@ -59,6 +62,8 @@ export class R2StorageService {
           infer: true,
         }),
       },
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   }
 
@@ -144,13 +149,49 @@ export class R2StorageService {
           Key: input.key,
           ContentType: input.contentType,
         }),
-        { expiresIn: input.expiresInSeconds },
+        {
+          expiresIn: input.expiresInSeconds,
+          // AWS SDK v3 omits Content-Type from the signature unless listed;
+          // required so clients must send the exact MIME type Nest validated.
+          signableHeaders: new Set(['content-type']),
+        },
       );
     } catch (error) {
       this.logger.error(
         `Failed to create signed PUT URL for key: ${input.key}`,
         error,
       );
+      throw error;
+    }
+  }
+
+  async getObject(
+    key: string,
+  ): Promise<{ body: Buffer; contentType: string } | null> {
+    try {
+      const result = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        }),
+      );
+
+      if (!result.Body) {
+        return null;
+      }
+
+      const bytes = await result.Body.transformToByteArray();
+
+      return {
+        body: Buffer.from(bytes),
+        contentType: result.ContentType ?? 'application/octet-stream',
+      };
+    } catch (error) {
+      if (error instanceof NotFound) {
+        return null;
+      }
+
+      this.logger.error(`Object download failed for key: ${key}`, error);
       throw error;
     }
   }

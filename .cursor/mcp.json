@@ -1,1 +1,12 @@
-{ "url": "https://mcp.prisma.io/mcp" }
+{
+  "mcpServers": {
+    "arcjet": {
+      "type": "streamable-http",
+      "url": "https://api.arcjet.com/mcp"
+    },
+    "prisma": {
+      "type": "streamable-http",
+      "url": "https://mcp.prisma.io/mcp"
+    }
+  }
+}

@@ -2,6 +2,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { ClerkAuthGuard } from './clerk-auth.guard';
 import type { ClerkService } from '../../lib/clerk/clerk.service';
@@ -11,6 +12,7 @@ describe('ClerkAuthGuard', () => {
   let guard: ClerkAuthGuard;
   let reflector: jest.Mocked<Pick<Reflector, 'getAllAndOverride'>>;
   let clerkService: jest.Mocked<Pick<ClerkService, 'verifyBearerToken'>>;
+  let configService: jest.Mocked<Pick<ConfigService, 'get'>>;
 
   const createContext = (
     authorizationHeader?: string,
@@ -37,9 +39,13 @@ describe('ClerkAuthGuard', () => {
     clerkService = {
       verifyBearerToken: jest.fn(),
     };
+    configService = {
+      get: jest.fn().mockReturnValue(['https://student.example.com']),
+    };
     guard = new ClerkAuthGuard(
       reflector as unknown as Reflector,
       clerkService as unknown as ClerkService,
+      configService as unknown as ConfigService,
     );
   });
 
@@ -70,7 +76,9 @@ describe('ClerkAuthGuard', () => {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(clerkService.verifyBearerToken).toHaveBeenCalledWith('valid_token');
+    expect(clerkService.verifyBearerToken).toHaveBeenCalledWith('valid_token', {
+      authorizedParties: ['https://student.example.com'],
+    });
     expect(request.clerkUserId).toBe('user_123');
     expect(request.clerkEmail).toBe('student@example.com');
   });

@@ -25,7 +25,7 @@ export class PostHogService implements OnModuleDestroy {
     }
 
     this.client = new PostHog(
-      this.configService.get('POSTHOG_API_KEY', { infer: true }) ?? '',
+      this.configService.get('POSTHOG_PROJECT_TOKEN', { infer: true }) ?? '',
       {
         host: this.configService.get('POSTHOG_HOST', { infer: true }),
       },

@@ -16,6 +16,19 @@ describe('SubscriptionsController', () => {
     >
   >;
 
+  const studentUser = {
+    id: '550e8400-e29b-41d4-a716-446655440001',
+    clerkId: 'user_123',
+    email: 'student@example.com',
+    fullName: 'Student Name',
+    phoneNumber: '0599000000',
+    telegramUsername: 'student_tg',
+    region: 'gaza' as const,
+    role: 'student' as const,
+    createdAt: new Date('2026-06-30T10:00:00.000Z'),
+    updatedAt: new Date('2026-06-30T10:00:00.000Z'),
+  };
+
   const subscriptionResponse = {
     id: 'subscription-uuid-1',
     status: 'pending_review' as const,
@@ -50,7 +63,7 @@ describe('SubscriptionsController', () => {
     });
 
     await expect(
-      subscriptionsController.createReceiptUploadUrl('user_123', {
+      subscriptionsController.createReceiptUploadUrl(studentUser, {
         contentType: 'image/jpeg',
       }),
     ).resolves.toEqual({
@@ -60,7 +73,7 @@ describe('SubscriptionsController', () => {
     });
 
     expect(subscriptionsService.createReceiptUploadUrl).toHaveBeenCalledWith(
-      'user_123',
+      studentUser,
       { contentType: 'image/jpeg' },
     );
   });
@@ -79,7 +92,7 @@ describe('SubscriptionsController', () => {
     );
 
     await expect(
-      subscriptionsController.createReceiptUploadUrl('user_123', {
+      subscriptionsController.createReceiptUploadUrl(studentUser, {
         contentType: 'application/pdf',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -89,7 +102,7 @@ describe('SubscriptionsController', () => {
     subscriptionsService.submitSubscription.mockResolvedValue(subscriptionResponse);
 
     await expect(
-      subscriptionsController.submitSubscription('user_123', {
+      subscriptionsController.submitSubscription(studentUser, {
         planId: 'plan-uuid-1',
         senderName: 'Sender Name',
         receiptStorageKey: 'receipts/user-uuid/receipt.jpg',
@@ -97,7 +110,7 @@ describe('SubscriptionsController', () => {
     ).resolves.toEqual(subscriptionResponse);
 
     expect(subscriptionsService.submitSubscription).toHaveBeenCalledWith(
-      'user_123',
+      studentUser,
       {
         planId: 'plan-uuid-1',
         senderName: 'Sender Name',
@@ -122,7 +135,7 @@ describe('SubscriptionsController', () => {
     );
 
     await expect(
-      subscriptionsController.submitSubscription('user_123', {
+      subscriptionsController.submitSubscription(studentUser, {
         planId: 'plan-uuid-1',
         senderName: 'A',
         receiptStorageKey: 'receipts/user-uuid/receipt.jpg',
@@ -134,11 +147,11 @@ describe('SubscriptionsController', () => {
     subscriptionsService.getMySubscription.mockResolvedValue(subscriptionResponse);
 
     await expect(
-      subscriptionsController.getMySubscription('user_123'),
+      subscriptionsController.getMySubscription(studentUser),
     ).resolves.toEqual(subscriptionResponse);
 
     expect(subscriptionsService.getMySubscription).toHaveBeenCalledWith(
-      'user_123',
+      studentUser,
     );
   });
 });

@@ -26,6 +26,7 @@ const testEnv: Record<string, string> = {
   R2_PUBLIC_BASE_URL: 'https://cdn.example.com',
   POSTHOG_ENABLED: 'false',
   ARCJET_ENABLED: 'false',
+  DEVICE_HASH_PEPPER: 'local-dev-pepper-min-16-chars',
 };
 
 describe('HealthController', () => {

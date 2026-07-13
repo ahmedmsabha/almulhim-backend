@@ -1,4 +1,4 @@
-jest.mock('../../modules/auth/auth.service', () => ({
+jest.mock('../auth.service', () => ({
   AuthService: class MockAuthService {
     findUserByClerkId = jest.fn();
   },
@@ -10,9 +10,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { AuthenticatedRequest } from '../../../common/types/authenticated-request.type';
+import { AuthService } from '../auth.service';
 import { RolesGuard } from './roles.guard';
-import { AuthService } from '../../modules/auth/auth.service';
-import type { AuthenticatedRequest } from '../types/authenticated-request.type';
 
 describe('RolesGuard', () => {
   let guard: RolesGuard;

@@ -30,7 +30,7 @@ type SubscriptionWithPlan = Subscription & {
   plan: SubscriptionPlan;
 };
 
-const toSubscriptionPlanSummary = (
+export const toSubscriptionPlanSummary = (
   plan: SubscriptionPlan,
 ): SubscriptionPlanSummary => ({
   id: plan.id,

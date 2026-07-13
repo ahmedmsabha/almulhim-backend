@@ -88,13 +88,24 @@ Flow:
 
 Statuses:
 
-- `free`
+- `free` — implicit when the student has no open subscription row (not stored in the database)
 - `pending_review`
 - `pending_approval`
 - `active`
 - `expired`
 - `rejected`
 - `suspended`
+
+Archived decisions (admin): non-pending statuses `active` | `rejected` | `suspended` | `expired`.
+
+---
+
+## Student Account Lifecycle
+
+- **Deactivate (soft block):** set `users.deactivated_at`, ban the linked Clerk user. Nest row remains. Student routes return 403.
+- **Reactivate:** unban Clerk, clear `deactivated_at`.
+- **Delete (hard):** delete Nest student User (Prisma cascades subscriptions, devices, support, downloads, notifications), then delete the Clerk user. Irreversible. Admins cannot be deleted via these routes.
+- Every student User has a required unique `clerkId`. Keep Nest ↔ Clerk in sync (fail-closed on deactivate/reactivate).
 
 ---
 
@@ -120,6 +131,16 @@ Rules:
 - store hashed device identifiers only
 - validate device binding on the server
 - admin can reset bindings manually
+- mobile bindings may store an Expo `pushToken` for future push delivery
+
+---
+
+## Notifications
+
+- Publishing a lesson or announcement creates in-app `Notification` rows for matching active students.
+- Region targeting: content `gaza`/`west_bank` → students in that region; content `both` → all active students. Deactivated students are excluded.
+- Push send is gated by `PUSH_NOTIFICATIONS_ENABLED` and remains a no-op stub until Mobile registers tokens via `POST /notifications/register-token`.
+- Notification failures must never block publish responses (`notifyRegion` swallows errors).
 
 ---
 

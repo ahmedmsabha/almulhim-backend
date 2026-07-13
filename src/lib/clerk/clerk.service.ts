@@ -47,4 +47,31 @@ export class ClerkService {
       throw error;
     }
   }
+
+  async banUser(clerkId: string): Promise<void> {
+    try {
+      await this.clerkClient.users.banUser(clerkId);
+    } catch (error) {
+      this.logger.error(`Failed to ban Clerk user ${clerkId}`, error);
+      throw error;
+    }
+  }
+
+  async unbanUser(clerkId: string): Promise<void> {
+    try {
+      await this.clerkClient.users.unbanUser(clerkId);
+    } catch (error) {
+      this.logger.error(`Failed to unban Clerk user ${clerkId}`, error);
+      throw error;
+    }
+  }
+
+  async deleteUser(clerkId: string): Promise<void> {
+    try {
+      await this.clerkClient.users.deleteUser(clerkId);
+    } catch (error) {
+      this.logger.error(`Failed to delete Clerk user ${clerkId}`, error);
+      throw error;
+    }
+  }
 }

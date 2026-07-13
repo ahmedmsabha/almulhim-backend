@@ -1,49 +1,50 @@
-# Memory — Phase 3 Step 07 Receipt Submission
+# Memory — Notifications Backend Foundation
 
-Last updated: 2026-06-30
+Last updated: 2026-07-13
 
 ## What was built
 
-- **Receipt submission (step 07):** `SubscriptionsController`, `SubscriptionsService`, Zod schemas, response types, constants, unit tests in `src/modules/subscriptions/`.
-- **Endpoints:** `POST /subscriptions/receipt-upload-url` (presigned PUT + server key); `POST /subscriptions` (planId, senderName, receiptStorageKey → `pending_review`); `GET /subscriptions/me` (open subscription).
-- **R2 storage:** `createSignedPutUrl()` and `headObject()` added to `src/lib/storage/r2-storage.service.ts`.
-- **Ops:** `cors.json` for R2 bucket `almulhim`; CORS applied via `npx wrangler` for local dev PUT uploads.
-- **Context:** `context/progress-tracker.md` step 07 complete; `context/library-docs.md` updated with R2 presigned URL + Wrangler 4.x CORS `rules` format.
+- **Schema:** `Notification` model + `DeviceBinding.pushToken`; migration `20260713091752_add_notifications` applied
+- **Module:** `src/modules/notifications/` — service, controller, Zod schemas, response types, unit tests
+- **Endpoints (student, registered):**
+  - `GET /notifications` (paginated, newest first)
+  - `GET /notifications/unread-count`
+  - `PATCH /notifications/:id/read`
+  - `PATCH /notifications/read-all`
+  - `POST /notifications/register-token` (`{ pushToken, deviceType: 'mobile' }` → updates existing mobile `DeviceBinding`)
+- **Publish wiring:** `AdminContentService.publishLesson` and `AdminAnnouncementsService.publish` call `notifyRegion` after DB update
+- **Env:** `PUSH_NOTIFICATIONS_ENABLED` defaults `false`; `expo-server-sdk` installed but Expo send intentionally stubbed
+- **Docs:** README, `architecture.md`, `domain-rules.md`, `env-contract.md`, `progress-tracker.md` updated
+- **Review:** Bugbot found no bugs on branch changes
 
 ## Decisions made
 
-- **Two-step presigned PUT** — client uploads to R2 directly; API receives metadata only.
-- **File constraints** — JPEG/PNG/WebP, max 5 MB, 15 min presigned TTL; validated via HeadObject on submit.
-- **Key format** — `receipts/{userId}/{uuid}.{ext}`; strict regex validation on submit.
-- **No receipt URL in student responses** — admin-only access later (step 09).
-- **PostHog** — `subscription_submitted` on successful POST (when enabled).
-- **Arcjet on receipt routes** — deferred to step 16.
+- Student regions are only `gaza` | `west_bank` (no `both`). Fan-out: content region `gaza`/`west_bank` → matching students; `both` → all active students. Deactivated students excluded.
+- Lesson region resolved from `lesson.chapter.unit.region` (lessons have no region column).
+- `notifyRegion` swallows all errors so publish never fails due to notifications.
+- Push send left as TODO stub until Mobile registers real Expo tokens and can be tested end-to-end.
+- `register-token` requires an existing mobile device binding (404 if missing) — does not create a binding from a token alone.
+- Followed project schema conventions (`@map` / `@@map` / UUID) rather than the raw sketch shape.
 
 ## Problems solved
 
-- **Wrangler CORS format:** Dashboard PascalCase array rejected by Wrangler 4.x; must use `{ "rules": [{ "allowed": { "origins", "methods", "headers" } }] }` R2 API shape.
-- **Wrangler not global:** Use `npx wrangler` (not bare `wrangler`); login once via `npx wrangler login`.
-- **Bugbot review fixes:** P2002 mapped by constraint target (open subscription vs duplicate receipt key); pre-check receipt key reuse; block upload URL when open subscription exists; reject zero-byte files; strict key regex.
+- Controller unit test needed `jest.mock('./notifications.service')` before importing controller (Prisma generated client path issue under Jest).
 
 ## Current state
 
-- **Phase 3:** step 07 done; next is step 08 Receipt Verification.
-- **Local:** build passes; 71+ tests pass (19 subscription service tests after review fixes).
-- **R2 CORS:** Applied on bucket `almulhim` for localhost ports 3000/3001/5173 — verified via `npx wrangler r2 bucket cors list almulhim`.
-- **Remote DB:** schema unchanged from step 03; no plan seed data.
-- **Clerk:** Session token must include `{"email": "{{user.primary_email_address}}"}` for registration.
-- **Compute:** Still crash-looping from prior work (env vars + Arcjet bundling) — unrelated to step 07.
+- Feature complete in code; migration applied on the connected Prisma Postgres DB.
+- Push path is a no-op by design (`PUSH_NOTIFICATIONS_ENABLED=false`, zero tokens).
+- Large uncommitted working tree remains (this feature + prior admin lifecycle / Arcjet / content work).
+- Local `npm run start` may still need a restart to pick up new routes.
 
 ## Next session starts with
 
 1. Run `/remember restore`.
-2. `/architect Phase 3, step 08` (Receipt Verification) — AI verification via Gemini, persist structured result, move passing items to `pending_approval`.
+2. Restart the API if needed, then verify publish → `Notification` rows (Prisma Studio / query) and student inbox endpoints with a seeded student token.
+3. Optionally regenerate Postman collection to include notification routes; wire Student Web/Mobile consumers later; implement Expo chunked send when Mobile exists.
 
 ## Open questions
 
-- **Production CORS origins:** Add student/admin web URLs to `cors.json` when frontend URLs are known.
-- **`authorizedParties` for Clerk:** Still not configured — deferred from step 04.
-- **Migration housekeeping:** `_prisma_migrations` may still need init migration resolved after advisory lock clears.
-- **Compute redeploy:** Production env vars + Arcjet bundling still pending.
-- **Plan seed data:** Table may be empty until admin creates plans.
-- **`.env` gap:** `R2_PUBLIC_BASE_URL` required by env schema but not in local `.env` — may block startup if not set.
+- Commit / PR strategy for the large uncommitted diff
+- When to flip Arcjet `DRY_RUN` → `LIVE`
+- When Mobile exists: wire `expo-server-sdk` chunked send and set `PUSH_NOTIFICATIONS_ENABLED=true`

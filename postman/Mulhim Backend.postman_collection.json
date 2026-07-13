@@ -1,0 +1,3049 @@
+{
+  "info": {
+    "_postman_id": "1af49d55-1791-4af9-8825-91fa03433ecc",
+    "name": "Mulhim Backend",
+    "description": "Complete Mulhim learning platform backend API.\n\nAuth: Clerk bearer tokens. Set `studentBearerToken` or `adminBearerToken` in the Local environment.\n\nDevice-bound routes require `X-Device-Id` (16–128 chars) and `X-Device-Type` (`web` or `mobile`).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{bearerToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "bearerToken",
+      "value": "{{studentBearerToken}}"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Public health check.",
+      "item": [
+        {
+          "name": "Check Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Public. No auth required.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Check Health",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"ok\",\n  \"environment\": \"development\",\n  \"database\": \"up\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Registration and profile.",
+      "item": [
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/me",
+            "description": "Requires Clerk auth. Returns 404 if not registered.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Current User",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"email\": \"student@example.com\",\n  \"fullName\": \"Ahmad Student\",\n  \"phoneNumber\": \"0599000000\",\n  \"telegramUsername\": \"ahmad_tg\",\n  \"region\": \"gaza\",\n  \"role\": \"student\",\n  \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-15T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/register",
+            "description": "Requires Clerk auth and JWT `email` claim. Email comes from token, not body.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Ahmad Student\",\n  \"phoneNumber\": \"0599000000\",\n  \"telegramUsername\": \"ahmad_tg\",\n  \"region\": \"gaza\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Register User",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"email\": \"student@example.com\",\n  \"fullName\": \"Ahmad Student\",\n  \"phoneNumber\": \"0599000000\",\n  \"telegramUsername\": \"ahmad_tg\",\n  \"region\": \"gaza\",\n  \"role\": \"student\",\n  \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-15T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Students (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users?q=sara&region=gaza&status=active&page=1&pageSize=10",
+            "description": "Optional query: `q` (search name/email/phone/telegram), `region` (gaza|west_bank), `status` (free|pending_review|pending_approval|active|expired|rejected|suspended), `page` (default 1), `pageSize` (default 10, max 100). Response: `{ students, total, page, pageSize }`. Student rows use `phone` / `telegram` and `subscriptionStatus`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List Students (Admin)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"students\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"fullName\": \"Ahmad Student\",\n      \"email\": \"student@example.com\",\n      \"phone\": \"0599000000\",\n      \"telegram\": \"ahmad_tg\",\n      \"region\": \"gaza\",\n      \"subscriptionStatus\": \"active\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Student (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "Returns one student in the same list-row DTO (`phone`, `telegram`, `subscriptionStatus`). 404 if missing or not a student.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Student (Admin)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"fullName\": \"Ahmad Student\",\n  \"email\": \"student@example.com\",\n  \"phone\": \"0599000000\",\n  \"telegram\": \"ahmad_tg\",\n  \"region\": \"gaza\",\n  \"subscriptionStatus\": \"active\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "description": "Subscription plan catalog.",
+      "item": [
+        {
+          "name": "List Public Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/plans/public",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List Public Plans",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"plans\": [\n    {\n      \"name\": \"Monthly\",\n      \"priceAmount\": 5000,\n      \"currency\": \"ILS\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Active Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/plans",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List Active Plans",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"Monthly\",\n      \"description\": \"30-day access\",\n      \"priceAmount\": 5000,\n      \"currency\": \"ILS\",\n      \"durationDays\": 30,\n      \"sortOrder\": 0\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List All Plans (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/plans/all",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List All Plans (Admin)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"Monthly\",\n      \"description\": \"30-day access\",\n      \"priceAmount\": 5000,\n      \"currency\": \"ILS\",\n      \"durationDays\": 30,\n      \"sortOrder\": 0,\n      \"isActive\": true,\n      \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Plan (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/plans",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Monthly\",\n  \"description\": \"30-day access\",\n  \"priceAmount\": 5000,\n  \"currency\": \"ILS\",\n  \"durationDays\": 30,\n  \"sortOrder\": 0\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Create Plan (Admin)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"Monthly\",\n  \"description\": \"30-day access\",\n  \"priceAmount\": 5000,\n  \"currency\": \"ILS\",\n  \"durationDays\": 30,\n  \"sortOrder\": 0,\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Plan (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/plans/{{planId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Update Plan (Admin)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"Monthly\",\n  \"description\": \"30-day access\",\n  \"priceAmount\": 5000,\n  \"currency\": \"ILS\",\n  \"durationDays\": 30,\n  \"sortOrder\": 0,\n  \"isActive\": false,\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T00:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "description": "Student subscription and receipt flow.",
+      "item": [
+        {
+          "name": "Create Receipt Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/subscriptions/receipt-upload-url",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"image/jpeg\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Create Receipt Upload URL",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"uploadUrl\": \"https://r2.example.com/signed-put-url\",\n  \"receiptStorageKey\": \"receipts/550e8400-e29b-41d4-a716-446655440000/550e8400-e29b-41d4-a716-446655440099.jpg\",\n  \"expiresInSeconds\": 900\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/subscriptions",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"{{planId}}\",\n  \"senderName\": \"Ahmad Student\",\n  \"receiptStorageKey\": \"receipts/{{userId}}/550e8400-e29b-41d4-a716-446655440099.jpg\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Submit Subscription",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"pending_review\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"Monthly\",\n    \"priceAmount\": 5000,\n    \"currency\": \"ILS\",\n    \"durationDays\": 30\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T12:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscriptions/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get My Subscription",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"pending_approval\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"Monthly\",\n    \"priceAmount\": 5000,\n    \"currency\": \"ILS\",\n    \"durationDays\": 30\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions Admin",
+      "description": "Admin subscription review.",
+      "item": [
+        {
+          "name": "List Pending Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscriptions/pending",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List Pending Subscriptions",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"subscriptions\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"status\": \"pending_approval\",\n      \"plan\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"Monthly\",\n        \"priceAmount\": 5000,\n        \"currency\": \"ILS\",\n        \"durationDays\": 30\n      },\n      \"student\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"fullName\": \"Ahmad Student\",\n        \"email\": \"student@example.com\",\n        \"phoneNumber\": \"0599000000\",\n        \"region\": \"gaza\"\n      },\n      \"receiptSenderName\": \"Ahmad Student\",\n      \"verificationResult\": {\n        \"version\": 1,\n        \"passed\": true,\n        \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n        \"aiEnabled\": true,\n        \"model\": \"gemini-3.5-flash\",\n        \"error\": null,\n        \"checks\": {\n          \"recipientMatch\": {\n            \"passed\": true,\n            \"detected\": \"Teacher Name\",\n            \"reason\": null\n          },\n          \"senderMatch\": {\n            \"passed\": true,\n            \"detected\": \"Ahmad Student\",\n            \"expected\": \"Ahmad Student\",\n            \"reason\": null\n          },\n          \"notDuplicate\": {\n            \"passed\": true,\n            \"detected\": \"TX-123\",\n            \"transactionReference\": \"TX-123\",\n            \"reason\": null\n          }\n        },\n        \"notes\": null\n      },\n      \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n      \"approvedAt\": null,\n      \"rejectedAt\": null,\n      \"rejectionReason\": null,\n      \"expiresAt\": null,\n      \"suspendedAt\": null,\n      \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n      \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Subscription By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Subscription By Id",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"pending_approval\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"Monthly\",\n    \"priceAmount\": 5000,\n    \"currency\": \"ILS\",\n    \"durationDays\": 30\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"version\": 1,\n    \"passed\": true,\n    \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n    \"aiEnabled\": true,\n    \"model\": \"gemini-3.5-flash\",\n    \"error\": null,\n    \"checks\": {\n      \"recipientMatch\": {\n        \"passed\": true,\n        \"detected\": \"Teacher Name\",\n        \"reason\": null\n      },\n      \"senderMatch\": {\n        \"passed\": true,\n        \"detected\": \"Ahmad Student\",\n        \"expected\": \"Ahmad Student\",\n        \"reason\": null\n      },\n      \"notDuplicate\": {\n        \"passed\": true,\n        \"detected\": \"TX-123\",\n        \"transactionReference\": \"TX-123\",\n        \"reason\": null\n      }\n    },\n    \"notes\": null\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": null,\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": null,\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Receipt URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}/receipt-url",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Receipt URL",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"url\": \"https://r2.example.com/signed-get-receipt\",\n  \"expiresInSeconds\": 900\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve Subscription",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}/approve",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Approve Subscription",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"active\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"Monthly\",\n    \"priceAmount\": 5000,\n    \"currency\": \"ILS\",\n    \"durationDays\": 30\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": true\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": \"2026-03-03T13:00:00.000Z\",\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T13:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Subscription",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}/reject",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Receipt does not match sender name\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Reject Subscription",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"rejected\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"Monthly\",\n    \"priceAmount\": 5000,\n    \"currency\": \"ILS\",\n    \"durationDays\": 30\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": false\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": null,\n  \"rejectedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectionReason\": \"Receipt does not match sender name\",\n  \"expiresAt\": null,\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T13:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Suspend Subscription",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}/suspend",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Suspend Subscription",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"suspended\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"Monthly\",\n    \"priceAmount\": 5000,\n    \"currency\": \"ILS\",\n    \"durationDays\": 30\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": true\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": \"2026-03-03T13:00:00.000Z\",\n  \"suspendedAt\": \"2026-02-15T09:00:00.000Z\",\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-15T09:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content",
+      "description": "Student content read APIs.",
+      "item": [
+        {
+          "name": "Get Content Tree",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/tree",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Content Tree",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"units\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n      \"title\": \"Unit 1\",\n      \"description\": \"Intro unit\",\n      \"sortOrder\": 0,\n      \"chapters\": [\n        {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n          \"title\": \"Chapter 1\",\n          \"sortOrder\": 0,\n          \"lessons\": [\n            {\n              \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n              \"title\": \"Lesson 1\",\n              \"sortOrder\": 0,\n              \"accessLevel\": \"preview\",\n              \"isLocked\": false\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Units",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/units",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List Units",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"units\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n      \"title\": \"Unit 1\",\n      \"description\": \"Intro unit\",\n      \"sortOrder\": 0\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Unit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/units/{{unitId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Unit",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"title\": \"Unit 1\",\n  \"description\": \"Intro unit\",\n  \"sortOrder\": 0,\n  \"chapters\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n      \"title\": \"Chapter 1\",\n      \"sortOrder\": 0\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Chapter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/chapters/{{chapterId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Chapter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"title\": \"Chapter 1\",\n  \"sortOrder\": 0,\n  \"unitId\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"lessons\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n      \"title\": \"Lesson 1\",\n      \"sortOrder\": 0,\n      \"accessLevel\": \"subscriber_only\",\n      \"isLocked\": true\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Lesson",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/lessons/{{lessonId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Lesson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson 1\",\n  \"sortOrder\": 0,\n  \"accessLevel\": \"preview\",\n  \"isLocked\": false,\n  \"chapterId\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"videos\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440013\",\n      \"title\": \"Intro Video\",\n      \"durationSeconds\": 600,\n      \"sortOrder\": 0\n    }\n  ],\n  \"pdfs\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content Admin",
+      "description": "Admin content management.",
+      "item": [
+        {
+          "name": "Get Admin Tree",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/tree",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Admin Tree",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"units\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Unit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/units/{{unitId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Admin Unit",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"title\": \"Unit 1\",\n  \"description\": \"Intro unit\",\n  \"region\": \"both\",\n  \"sortOrder\": 0,\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"chapters\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Chapter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/chapters/{{chapterId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Admin Chapter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"title\": \"Chapter 1\",\n  \"sortOrder\": 0,\n  \"unitId\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"lessons\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Lesson",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Admin Lesson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson 1\",\n  \"sortOrder\": 0,\n  \"accessLevel\": \"subscriber_only\",\n  \"chapterId\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"videos\": [],\n  \"pdfs\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Unit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/units",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Unit 1\",\n  \"description\": \"Intro unit\",\n  \"region\": \"both\",\n  \"sortOrder\": 0\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Create Unit",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"title\": \"Unit 1\",\n  \"description\": \"Intro unit\",\n  \"region\": \"both\",\n  \"sortOrder\": 0,\n  \"isPublished\": false,\n  \"publishedAt\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Unit",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/units/{{unitId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Unit 1 Updated\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Update Unit",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"title\": \"Unit 1 Updated\",\n  \"description\": \"Intro unit\",\n  \"region\": \"both\",\n  \"sortOrder\": 0,\n  \"isPublished\": false,\n  \"publishedAt\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Publish Unit",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/units/{{unitId}}/publish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Publish Unit",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"title\": \"Unit 1\",\n  \"description\": \"Intro unit\",\n  \"region\": \"both\",\n  \"sortOrder\": 0,\n  \"isPublished\": true,\n  \"publishedAt\": \"2026-02-01T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unpublish Unit",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/units/{{unitId}}/unpublish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Unpublish Unit",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"title\": \"Unit 1\",\n  \"description\": \"Intro unit\",\n  \"region\": \"both\",\n  \"sortOrder\": 0,\n  \"isPublished\": false,\n  \"publishedAt\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Chapter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/units/{{unitId}}/chapters",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chapter 1\",\n  \"sortOrder\": 0\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Create Chapter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"title\": \"Chapter 1\",\n  \"sortOrder\": 0,\n  \"unitId\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"lessons\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Chapter",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/chapters/{{chapterId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chapter 1 Updated\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Update Chapter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"title\": \"Chapter 1 Updated\",\n  \"sortOrder\": 0,\n  \"unitId\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"lessons\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Publish Chapter",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/chapters/{{chapterId}}/publish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Publish Chapter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"title\": \"Chapter 1\",\n  \"sortOrder\": 0,\n  \"unitId\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"isPublished\": true,\n  \"publishedAt\": \"2026-02-01T10:00:00.000Z\",\n  \"lessons\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unpublish Chapter",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/chapters/{{chapterId}}/unpublish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Unpublish Chapter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"title\": \"Chapter 1\",\n  \"sortOrder\": 0,\n  \"unitId\": \"550e8400-e29b-41d4-a716-446655440010\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"lessons\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Lesson",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/chapters/{{chapterId}}/lessons",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lesson 1\",\n  \"accessLevel\": \"subscriber_only\",\n  \"sortOrder\": 0\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Create Lesson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson 1\",\n  \"sortOrder\": 0,\n  \"accessLevel\": \"subscriber_only\",\n  \"chapterId\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"videos\": [],\n  \"pdfs\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Lesson",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lesson 1 Updated\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Update Lesson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson 1 Updated\",\n  \"sortOrder\": 0,\n  \"accessLevel\": \"subscriber_only\",\n  \"chapterId\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"videos\": [],\n  \"pdfs\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Publish Lesson",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}/publish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Publish Lesson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson 1\",\n  \"sortOrder\": 0,\n  \"accessLevel\": \"subscriber_only\",\n  \"chapterId\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"isPublished\": true,\n  \"publishedAt\": \"2026-02-01T10:00:00.000Z\",\n  \"videos\": [],\n  \"pdfs\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unpublish Lesson",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}/unpublish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Unpublish Lesson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson 1\",\n  \"sortOrder\": 0,\n  \"accessLevel\": \"subscriber_only\",\n  \"chapterId\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"videos\": [],\n  \"pdfs\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Video Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}/videos/upload-url",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"video/mp4\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Create Video Upload URL",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"uploadUrl\": \"https://r2.example.com/signed-put-video\",\n  \"storageKey\": \"videos/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.mp4\",\n  \"expiresInSeconds\": 900\n}"
+            }
+          ]
+        },
+        {
+          "name": "Attach Video",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}/videos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageKey\": \"videos/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.mp4\",\n  \"title\": \"Intro Video\",\n  \"sortOrder\": 0,\n  \"durationSeconds\": 600\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Attach Video",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440014\",\n  \"lessonId\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Intro Video\",\n  \"storageKey\": \"videos/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.mp4\",\n  \"durationSeconds\": 600,\n  \"sortOrder\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Video",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/videos/{{videoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Intro Video Updated\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Update Video",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440014\",\n  \"lessonId\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Intro Video Updated\",\n  \"storageKey\": \"videos/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.mp4\",\n  \"durationSeconds\": 600,\n  \"sortOrder\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create PDF Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}/pdfs/upload-url",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"application/pdf\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Create PDF Upload URL",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"uploadUrl\": \"https://r2.example.com/signed-put-pdf\",\n  \"storageKey\": \"pdfs/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.pdf\",\n  \"expiresInSeconds\": 900\n}"
+            }
+          ]
+        },
+        {
+          "name": "Attach PDF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/lessons/{{lessonId}}/pdfs",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageKey\": \"pdfs/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.pdf\",\n  \"title\": \"Lesson Notes\",\n  \"sortOrder\": 0\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Attach PDF",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440015\",\n  \"lessonId\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson Notes\",\n  \"storageKey\": \"pdfs/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.pdf\",\n  \"sortOrder\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update PDF",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/content/admin/pdfs/{{pdfId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lesson Notes Updated\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Update PDF",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440015\",\n  \"lessonId\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"title\": \"Lesson Notes Updated\",\n  \"storageKey\": \"pdfs/550e8400-e29b-41d4-a716-446655440012/550e8400-e29b-41d4-a716-446655440099.pdf\",\n  \"sortOrder\": 0\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Announcements",
+      "description": "Student announcement feed.",
+      "item": [
+        {
+          "name": "List Announcements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/announcements",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List Announcements",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"announcements\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440020\",\n      \"title\": \"Welcome\",\n      \"body\": \"Platform is live.\",\n      \"region\": \"both\",\n      \"publishedAt\": \"2026-02-01T08:00:00.000Z\",\n      \"imageUrl\": \"https://r2.example.com/signed-announcement-image\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Announcements Admin",
+      "description": "Admin announcement management.",
+      "item": [
+        {
+          "name": "List All Announcements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/announcements/admin",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List All Announcements",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"announcements\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Announcement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/announcements/admin/{{announcementId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Announcement",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440020\",\n  \"title\": \"Welcome\",\n  \"body\": \"Platform is live.\",\n  \"region\": \"both\",\n  \"imageStorageKey\": null,\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"createdAt\": \"2026-02-01T08:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T08:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/announcements/admin",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Welcome\",\n  \"body\": \"Platform is live.\",\n  \"region\": \"both\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Create Announcement",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440020\",\n  \"title\": \"Welcome\",\n  \"body\": \"Platform is live.\",\n  \"region\": \"both\",\n  \"imageStorageKey\": null,\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"createdAt\": \"2026-02-01T08:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T08:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Announcement",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/announcements/admin/{{announcementId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Welcome Updated\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Update Announcement",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440020\",\n  \"title\": \"Welcome Updated\",\n  \"body\": \"Platform is live.\",\n  \"region\": \"both\",\n  \"imageStorageKey\": null,\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"createdAt\": \"2026-02-01T08:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T09:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Publish Announcement",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/announcements/admin/{{announcementId}}/publish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Publish Announcement",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440020\",\n  \"title\": \"Welcome\",\n  \"body\": \"Platform is live.\",\n  \"region\": \"both\",\n  \"imageStorageKey\": null,\n  \"isPublished\": true,\n  \"publishedAt\": \"2026-02-01T10:00:00.000Z\",\n  \"createdAt\": \"2026-02-01T08:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unpublish Announcement",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/announcements/admin/{{announcementId}}/unpublish",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Unpublish Announcement",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440020\",\n  \"title\": \"Welcome\",\n  \"body\": \"Platform is live.\",\n  \"region\": \"both\",\n  \"imageStorageKey\": null,\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"createdAt\": \"2026-02-01T08:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T11:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Image Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/announcements/admin/{{announcementId}}/image-upload-url",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"image/jpeg\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Create Image Upload URL",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"uploadUrl\": \"https://r2.example.com/signed-put-image\",\n  \"storageKey\": \"announcements/550e8400-e29b-41d4-a716-446655440020/550e8400-e29b-41d4-a716-446655440099.jpg\",\n  \"expiresInSeconds\": 900\n}"
+            }
+          ]
+        },
+        {
+          "name": "Attach Image",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/announcements/admin/{{announcementId}}/attach-image",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageKey\": \"announcements/550e8400-e29b-41d4-a716-446655440020/550e8400-e29b-41d4-a716-446655440099.jpg\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Attach Image",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440020\",\n  \"title\": \"Welcome\",\n  \"body\": \"Platform is live.\",\n  \"region\": \"both\",\n  \"imageStorageKey\": \"announcements/550e8400-e29b-41d4-a716-446655440020/550e8400-e29b-41d4-a716-446655440099.jpg\",\n  \"isPublished\": false,\n  \"publishedAt\": null,\n  \"createdAt\": \"2026-02-01T08:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T09:30:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Support",
+      "description": "Student support requests.",
+      "item": [
+        {
+          "name": "Create Support Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/support",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Payment question\",\n  \"message\": \"I submitted a receipt but status is still pending.\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Create Support Request",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440030\",\n  \"subject\": \"Payment question\",\n  \"message\": \"I submitted a receipt but status is still pending.\",\n  \"status\": \"open\",\n  \"adminReply\": null,\n  \"reviewedAt\": null,\n  \"closedAt\": null,\n  \"createdAt\": \"2026-02-01T14:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List My Support Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/support/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List My Support Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"requests\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440030\",\n      \"subject\": \"Payment question\",\n      \"message\": \"I submitted a receipt but status is still pending.\",\n      \"status\": \"open\",\n      \"adminReply\": null,\n      \"reviewedAt\": null,\n      \"closedAt\": null,\n      \"createdAt\": \"2026-02-01T14:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Support Admin",
+      "description": "Admin support review.",
+      "item": [
+        {
+          "name": "List Support Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/support/admin/requests?status=open",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List Support Requests",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"requests\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Support Request",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/support/admin/requests/{{supportRequestId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Support Request",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440030\",\n  \"subject\": \"Payment question\",\n  \"message\": \"I submitted a receipt but status is still pending.\",\n  \"status\": \"open\",\n  \"adminReply\": null,\n  \"reviewedAt\": null,\n  \"closedAt\": null,\n  \"createdAt\": \"2026-02-01T14:00:00.000Z\",\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reply to Support Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/support/admin/requests/{{supportRequestId}}/reply",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reply\": \"We are reviewing your receipt now.\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Reply to Support Request",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440030\",\n  \"subject\": \"Payment question\",\n  \"message\": \"I submitted a receipt but status is still pending.\",\n  \"status\": \"reviewed\",\n  \"adminReply\": \"We are reviewing your receipt now.\",\n  \"reviewedAt\": \"2026-02-01T15:00:00.000Z\",\n  \"closedAt\": null,\n  \"createdAt\": \"2026-02-01T14:00:00.000Z\",\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Close Support Request",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/support/admin/requests/{{supportRequestId}}/close",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Close Support Request",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440030\",\n  \"subject\": \"Payment question\",\n  \"message\": \"I submitted a receipt but status is still pending.\",\n  \"status\": \"closed\",\n  \"adminReply\": \"We are reviewing your receipt now.\",\n  \"reviewedAt\": \"2026-02-01T15:00:00.000Z\",\n  \"closedAt\": \"2026-02-01T16:00:00.000Z\",\n  \"createdAt\": \"2026-02-01T14:00:00.000Z\",\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Devices",
+      "description": "Student device binding.",
+      "item": [
+        {
+          "name": "Bind Device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/devices/bind",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceType\": \"mobile\",\n  \"deviceIdentifier\": \"{{deviceId}}\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Bind Device",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"deviceType\": \"mobile\",\n  \"boundAt\": \"2026-02-01T10:00:00.000Z\",\n  \"lastSeenAt\": \"2026-02-01T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Device Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/devices/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Get Device Status",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"web\": {\n    \"bound\": false,\n    \"boundAt\": null,\n    \"lastSeenAt\": null\n  },\n  \"mobile\": {\n    \"bound\": true,\n    \"boundAt\": \"2026-02-01T10:00:00.000Z\",\n    \"lastSeenAt\": \"2026-02-01T12:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Device Heartbeat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Device-Id",
+                "value": "{{deviceId}}"
+              },
+              {
+                "key": "X-Device-Type",
+                "value": "{{deviceType}}"
+              }
+            ],
+            "url": "{{baseUrl}}/devices/heartbeat",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Device Heartbeat",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"deviceType\": \"mobile\",\n  \"lastSeenAt\": \"2026-02-01T12:30:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Devices Admin",
+      "description": "Admin device reset.",
+      "item": [
+        {
+          "name": "List User Device Bindings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/devices/admin/users/{{userId}}/bindings",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List User Device Bindings",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"bindings\": [\n    {\n      \"deviceType\": \"mobile\",\n      \"boundAt\": \"2026-02-01T10:00:00.000Z\",\n      \"lastSeenAt\": \"2026-02-01T12:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset Device Binding",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/devices/admin/users/{{userId}}/bindings/mobile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Reset Device Binding",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"bindings\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset All Device Bindings",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/devices/admin/users/{{userId}}/bindings",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Reset All Device Bindings",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"bindings\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Downloads",
+      "description": "Mobile secure video downloads.",
+      "item": [
+        {
+          "name": "Authorize Video Download",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Device-Id",
+                "value": "{{deviceId}}"
+              },
+              {
+                "key": "X-Device-Type",
+                "value": "{{deviceType}}"
+              }
+            ],
+            "url": "{{baseUrl}}/downloads/videos/{{lessonVideoId}}/authorize",
+            "description": "Mobile device only. Requires active subscription for locked lessons.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined Authorize Video Download",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"downloadId\": \"550e8400-e29b-41d4-a716-446655440040\",\n  \"url\": \"https://r2.example.com/signed-video-download\",\n  \"expiresAt\": \"2026-02-01T12:15:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List My Downloads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Device-Id",
+                "value": "{{deviceId}}"
+              },
+              {
+                "key": "X-Device-Type",
+                "value": "{{deviceType}}"
+              }
+            ],
+            "url": "{{baseUrl}}/downloads/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "undefined List My Downloads",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"downloads\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440040\",\n      \"lessonVideoId\": \"550e8400-e29b-41d4-a716-446655440013\",\n      \"downloadedAt\": \"2026-02-01T12:00:00.000Z\",\n      \"revokedAt\": null,\n      \"isRevoked\": false,\n      \"isAccessValid\": true\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

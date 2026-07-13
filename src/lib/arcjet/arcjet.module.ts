@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ArcjetService } from './arcjet.service';
 
+@Global()
 @Module({
   providers: [ArcjetService],
   exports: [ArcjetService],

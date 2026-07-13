@@ -1,15 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import arcjet, { shield, type ArcjetNodeRequest } from '@arcjet/node';
+import arcjet, { type ArcjetNodeRequest } from '@arcjet/node';
 import type { ArcjetDecision } from 'arcjet';
 import type { AppEnv } from '../../config/env.schema';
+import {
+  ARCJET_BASE_RULES,
+  ARCJET_PROFILE_RULES,
+  ARCJET_PROFILES,
+  type ArcjetProfile,
+} from './arcjet.profiles';
 
-type ArcjetInstance = ReturnType<typeof arcjet>;
+type ArcjetProfileClient = {
+  protect(
+    request: ArcjetNodeRequest,
+    props?: { userId: string },
+  ): Promise<ArcjetDecision>;
+};
+type ArcjetProtectProps = {
+  userId?: string;
+};
 
 @Injectable()
 export class ArcjetService {
   private readonly logger = new Logger(ArcjetService.name);
-  private readonly client: ArcjetInstance | null;
+  private readonly profileClients: Map<ArcjetProfile, ArcjetProfileClient> | null;
 
   constructor(
     private readonly configService: ConfigService<AppEnv, true>,
@@ -17,37 +31,57 @@ export class ArcjetService {
     const enabled = this.configService.get('ARCJET_ENABLED', { infer: true });
 
     if (!enabled) {
-      this.client = null;
+      this.profileClients = null;
       this.logger.log('Arcjet disabled');
       return;
     }
 
-    this.client = arcjet({
-      key: this.configService.get('ARCJET_KEY', { infer: true }) ?? '',
-      rules: [shield({ mode: 'DRY_RUN' })],
+    const key = this.configService.get('ARCJET_KEY', { infer: true }) ?? '';
+    const baseClient = arcjet({
+      key,
+      rules: [...ARCJET_BASE_RULES],
     });
 
-    this.logger.log('Arcjet client initialized');
+    this.profileClients = new Map(
+      ARCJET_PROFILES.map((profile) => {
+        const { rateLimit, botDetection } = ARCJET_PROFILE_RULES[profile];
+        let client = baseClient.withRule(rateLimit);
+
+        if (botDetection) {
+          client = client.withRule(botDetection);
+        }
+
+        return [profile, client as ArcjetProfileClient] as const;
+      }),
+    );
+
+    this.logger.log('Arcjet profile clients initialized');
   }
 
   isEnabled(): boolean {
-    return this.client !== null;
+    return this.profileClients !== null;
   }
 
-  getClient(): ArcjetInstance | null {
-    return this.client;
-  }
+  async protectProfile(
+    profile: ArcjetProfile,
+    request: ArcjetNodeRequest,
+    props?: ArcjetProtectProps,
+  ): Promise<ArcjetDecision | null> {
+    const client = this.profileClients?.get(profile);
 
-  async protect(request: ArcjetNodeRequest): Promise<ArcjetDecision | null> {
-    if (!this.client) {
+    if (!client) {
       return null;
     }
 
     try {
-      return await this.client.protect(request);
+      if (props?.userId) {
+        return await client.protect(request, { userId: props.userId });
+      }
+
+      return await client.protect(request);
     } catch (error) {
-      this.logger.error('Arcjet protection check failed', error);
-      throw error;
+      this.logger.error(`Arcjet protection check failed for "${profile}"`, error);
+      return null;
     }
   }
 }

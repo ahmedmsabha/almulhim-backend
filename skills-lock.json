@@ -7,6 +7,12 @@
       "skillPath": "skills/architect/SKILL.md",
       "computedHash": "62908472db7bd81004ab9abe0810bac166cee1b6e08aaf5793175bb90c4916f7"
     },
+    "arcjet": {
+      "source": "arcjet/skills",
+      "sourceType": "github",
+      "skillPath": "arcjet/SKILL.md",
+      "computedHash": "f324f03a6100576bbd2f51870c525bb7b25c80b90c612406107c1b25473f36f4"
+    },
     "prisma-cli": {
       "source": "prisma/skills",
       "sourceType": "github",

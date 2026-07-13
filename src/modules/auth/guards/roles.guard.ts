@@ -6,10 +6,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { UserRole } from '../../generated/prisma/client';
-import { AuthService } from '../../modules/auth/auth.service';
-import { IS_PUBLIC_KEY, ROLES_KEY } from '../constants/auth-metadata';
-import type { AuthenticatedRequest } from '../types/authenticated-request.type';
+import type { UserRole } from '../../../generated/prisma/client';
+import { IS_PUBLIC_KEY, ROLES_KEY } from '../../../common/constants/auth-metadata';
+import type { AuthenticatedRequest } from '../../../common/types/authenticated-request.type';
+import { AuthService } from '../auth.service';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -48,7 +48,8 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException('Authentication required');
     }
 
-    const user = await this.authService.findUserByClerkId(clerkUserId);
+    const user =
+      request.user ?? (await this.authService.findUserByClerkId(clerkUserId));
 
     if (!user) {
       throw new ForbiddenException('User is not registered');

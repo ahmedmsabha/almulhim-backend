@@ -22,22 +22,28 @@ jest.mock('../../lib/storage/r2-storage.service', () => ({
   },
 }));
 
-jest.mock('../../lib/posthog/posthog.service', () => ({
-  PostHogService: class MockPostHogService {
-    capture = jest.fn();
+jest.mock('./receipt-verification.service', () => ({
+  ReceiptVerificationService: class MockReceiptVerificationService {
+    scheduleVerification = jest.fn();
+  },
+}));
+
+jest.mock('../../lib/analytics/analytics.service', () => ({
+  AnalyticsService: class MockAnalyticsService {
+    captureSubscriptionSubmitted = jest.fn();
   },
 }));
 
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { PostHogService } from '../../lib/posthog/posthog.service';
+import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
+import { ReceiptVerificationService } from './receipt-verification.service';
 import { RECEIPT_UPLOAD_EXPIRES_SECONDS } from './constants/receipt-upload.constants';
 import { SubscriptionsService } from './subscriptions.service';
 
@@ -45,7 +51,8 @@ describe('SubscriptionsService', () => {
   let subscriptionsService: SubscriptionsService;
   let prismaService: PrismaService;
   let r2StorageService: R2StorageService;
-  let postHogService: PostHogService;
+  let analyticsService: AnalyticsService;
+  let receiptVerificationService: ReceiptVerificationService;
 
   const studentUser = {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -127,24 +134,25 @@ describe('SubscriptionsService', () => {
   beforeEach(() => {
     prismaService = new PrismaService({} as never);
     r2StorageService = new R2StorageService({} as never);
-    postHogService = new PostHogService({} as never);
+    analyticsService = new AnalyticsService({} as never);
+    receiptVerificationService = new ReceiptVerificationService();
     subscriptionsService = new SubscriptionsService(
       prismaService,
       r2StorageService,
-      postHogService,
+      analyticsService,
+      receiptVerificationService,
     );
   });
 
   describe('createReceiptUploadUrl', () => {
     it('returns a presigned upload URL and server-generated key', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(studentUser);
       mockNoOpenSubscriptionOrReceiptReuse();
       jest
         .spyOn(r2StorageService, 'createSignedPutUrl')
         .mockResolvedValue('https://upload.example.com');
 
       const result = await subscriptionsService.createReceiptUploadUrl(
-        'user_123',
+        studentUser,
         { contentType: 'image/jpeg' },
       );
 
@@ -164,24 +172,13 @@ describe('SubscriptionsService', () => {
       );
     });
 
-    it('throws ForbiddenException when user is not registered', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(null);
-
-      await expect(
-        subscriptionsService.createReceiptUploadUrl('user_123', {
-          contentType: 'image/jpeg',
-        }),
-      ).rejects.toThrow(new ForbiddenException('User is not registered'));
-    });
-
     it('throws ConflictException when user already has an open subscription', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(studentUser);
       jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440004',
       });
 
       await expect(
-        subscriptionsService.createReceiptUploadUrl('user_123', {
+        subscriptionsService.createReceiptUploadUrl(studentUser, {
           contentType: 'image/jpeg',
         }),
       ).rejects.toThrow(
@@ -198,7 +195,6 @@ describe('SubscriptionsService', () => {
     };
 
     beforeEach(() => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(studentUser);
       mockNoOpenSubscriptionOrReceiptReuse();
       jest.spyOn(prismaService.subscriptionPlan, 'findUnique').mockResolvedValue({
         id: activePlan.id,
@@ -215,7 +211,7 @@ describe('SubscriptionsService', () => {
 
     it('creates a pending_review subscription and captures analytics', async () => {
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).resolves.toEqual({
         id: subscriptionRow.id,
         status: 'pending_review',
@@ -241,14 +237,16 @@ describe('SubscriptionsService', () => {
         },
         include: { plan: true },
       });
-      expect(postHogService.capture).toHaveBeenCalledWith(
+      expect(analyticsService.captureSubscriptionSubmitted).toHaveBeenCalledWith(
         studentUser.id,
-        'subscription_submitted',
         {
           subscriptionId: subscriptionRow.id,
           planId: activePlan.id,
           status: 'pending_review',
         },
+      );
+      expect(receiptVerificationService.scheduleVerification).toHaveBeenCalledWith(
+        subscriptionRow.id,
       );
     });
 
@@ -271,7 +269,7 @@ describe('SubscriptionsService', () => {
         });
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
         new ConflictException('User already has an open subscription'),
       );
@@ -296,7 +294,7 @@ describe('SubscriptionsService', () => {
         });
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
         new ConflictException('Receipt has already been used for a subscription'),
       );
@@ -306,7 +304,7 @@ describe('SubscriptionsService', () => {
       jest.spyOn(prismaService.subscriptionPlan, 'findUnique').mockResolvedValue(null);
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(new NotFoundException('Plan not found'));
     });
 
@@ -317,13 +315,13 @@ describe('SubscriptionsService', () => {
       });
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(new BadRequestException('Plan is not available'));
     });
 
     it('throws BadRequestException when receipt key does not belong to user', async () => {
       await expect(
-        subscriptionsService.submitSubscription('user_123', {
+        subscriptionsService.submitSubscription(studentUser, {
           ...submitInput,
           receiptStorageKey:
             'receipts/550e8400-e29b-41d4-a716-446655440099/550e8400-e29b-41d4-a716-446655440005.jpg',
@@ -333,7 +331,7 @@ describe('SubscriptionsService', () => {
 
     it('throws BadRequestException when receipt key format is invalid', async () => {
       await expect(
-        subscriptionsService.submitSubscription('user_123', {
+        subscriptionsService.submitSubscription(studentUser, {
           ...submitInput,
           receiptStorageKey: `receipts/${studentUser.id}/invalid-name.jpg`,
         }),
@@ -344,8 +342,10 @@ describe('SubscriptionsService', () => {
       jest.spyOn(r2StorageService, 'headObject').mockResolvedValue(null);
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
-      ).rejects.toThrow(new BadRequestException('Receipt file was not uploaded'));
+        subscriptionsService.submitSubscription(studentUser, submitInput),
+      ).rejects.toThrow(
+        new BadRequestException('Receipt file was not found in storage'),
+      );
     });
 
     it('throws BadRequestException when receipt file is empty', async () => {
@@ -355,7 +355,7 @@ describe('SubscriptionsService', () => {
       });
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(new BadRequestException('Receipt file was not uploaded'));
     });
 
@@ -366,7 +366,7 @@ describe('SubscriptionsService', () => {
       });
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(new BadRequestException('Receipt file type is not allowed'));
     });
 
@@ -377,7 +377,7 @@ describe('SubscriptionsService', () => {
       });
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
         new BadRequestException('Receipt file exceeds maximum size'),
       );
@@ -393,7 +393,7 @@ describe('SubscriptionsService', () => {
       );
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
         new ConflictException('User already has an open subscription'),
       );
@@ -409,7 +409,7 @@ describe('SubscriptionsService', () => {
       );
 
       await expect(
-        subscriptionsService.submitSubscription('user_123', submitInput),
+        subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
         new ConflictException('Receipt has already been used for a subscription'),
       );
@@ -418,13 +418,12 @@ describe('SubscriptionsService', () => {
 
   describe('getMySubscription', () => {
     it('returns the latest open subscription', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(studentUser);
       jest
         .spyOn(prismaService.subscription, 'findFirst')
         .mockResolvedValue(subscriptionRow);
 
       await expect(
-        subscriptionsService.getMySubscription('user_123'),
+        subscriptionsService.getMySubscription(studentUser),
       ).resolves.toEqual({
         id: subscriptionRow.id,
         status: 'pending_review',
@@ -442,20 +441,11 @@ describe('SubscriptionsService', () => {
     });
 
     it('throws NotFoundException when no open subscription exists', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(studentUser);
       jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
 
       await expect(
-        subscriptionsService.getMySubscription('user_123'),
+        subscriptionsService.getMySubscription(studentUser),
       ).rejects.toThrow(new NotFoundException('No open subscription found'));
-    });
-
-    it('throws ForbiddenException when user is not registered', async () => {
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(null);
-
-      await expect(
-        subscriptionsService.getMySubscription('user_123'),
-      ).rejects.toThrow(new ForbiddenException('User is not registered'));
     });
   });
 });

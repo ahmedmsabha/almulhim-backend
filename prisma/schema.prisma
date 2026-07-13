@@ -58,6 +58,8 @@ model User {
   telegramUsername String        @map("telegram_username")
   region           StudentRegion
   role             UserRole      @default(student)
+  /// Soft block — null means active. Source of truth for student product access.
+  deactivatedAt    DateTime?     @map("deactivated_at")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
@@ -65,7 +67,9 @@ model User {
   supportRequests SupportRequest[]
   deviceBindings  DeviceBinding[]
   videoDownloads  VideoDownload[]
+  notifications   Notification[]
 
+  @@index([deactivatedAt])
   @@map("users")
 }
 
@@ -91,9 +95,10 @@ model Subscription {
   userId             String             @map("user_id") @db.Uuid
   planId             String             @map("plan_id") @db.Uuid
   status             SubscriptionStatus
-  receiptStorageKey  String?            @map("receipt_storage_key")
-  receiptSenderName  String?            @map("receipt_sender_name")
-  verificationResult Json?              @map("verification_result")
+  receiptStorageKey           String?            @map("receipt_storage_key")
+  receiptSenderName           String?            @map("receipt_sender_name")
+  receiptTransactionReference String?            @unique @map("receipt_transaction_reference")
+  verificationResult          Json?              @map("verification_result")
   verifiedAt         DateTime?          @map("verified_at")
   approvedAt         DateTime?          @map("approved_at")
   rejectedAt         DateTime?          @map("rejected_at")
@@ -108,6 +113,9 @@ model Subscription {
 
   @@index([userId, status])
   @@index([status])
+  /// Partial unique indexes are defined in SQL migrations only:
+  /// - subscriptions_one_open_per_user_idx (one open row per user)
+  /// - subscriptions_receipt_storage_key_unique_idx (unique receipt keys)
   @@map("subscriptions")
 }
 
@@ -235,6 +243,8 @@ model DeviceBinding {
   userId     String     @map("user_id") @db.Uuid
   deviceType DeviceType @map("device_type")
   deviceHash String     @map("device_hash")
+  /// Expo push token — set by Mobile via POST /notifications/register-token. Null until a consumer app registers.
+  pushToken  String?    @map("push_token")
   boundAt    DateTime   @default(now()) @map("bound_at")
   lastSeenAt DateTime?  @map("last_seen_at")
   createdAt  DateTime   @default(now()) @map("created_at")
@@ -244,6 +254,25 @@ model DeviceBinding {
 
   @@unique([userId, deviceType])
   @@map("device_bindings")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  /// "lesson_published" | "announcement_published"
+  type      String
+  /// lessonId or announcementId
+  entityId  String   @map("entity_id") @db.Uuid
+  title     String
+  body      String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 model VideoDownload {
