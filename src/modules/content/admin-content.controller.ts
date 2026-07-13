@@ -238,7 +238,6 @@ export class AdminContentController {
     );
   }
 
-  @ArcjetProtect('admin-mutation')
   @Get('pdfs/:id/view-url')
   async getPdfViewUrl(
     @Param('id', ParseUUIDPipe) pdfId: string,
