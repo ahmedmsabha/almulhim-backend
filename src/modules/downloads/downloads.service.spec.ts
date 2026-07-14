@@ -123,18 +123,29 @@ describe('DownloadsService', () => {
   });
 
   describe('authorizeVideoDownload', () => {
-    it('rejects web device requests', async () => {
-      await expect(
-        downloadsService.authorizeVideoDownload(
-          studentUser,
-          webDevice,
-          lessonVideoId,
-        ),
-      ).rejects.toThrow(
-        new ForbiddenException(
-          'Video downloads are available on mobile devices only',
-        ),
+    it('allows web device streaming authorize', async () => {
+      jest
+        .spyOn(prismaService.videoDownload, 'findFirst')
+        .mockResolvedValue(null);
+      jest.spyOn(prismaService.videoDownload, 'create').mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440060',
+        userId: studentUser.id,
+        lessonVideoId,
+        deviceHash: webDevice.deviceHash,
+        downloadedAt,
+        revokedAt: null,
+        createdAt: downloadedAt,
+        updatedAt: downloadedAt,
+      });
+
+      const result = await downloadsService.authorizeVideoDownload(
+        studentUser,
+        webDevice,
+        lessonVideoId,
       );
+
+      expect(result.url).toBe('https://r2.example.com/signed-video');
+      expect(result.streamTicket).toEqual(expect.any(String));
     });
 
     it('returns a signed URL and creates a download record', async () => {

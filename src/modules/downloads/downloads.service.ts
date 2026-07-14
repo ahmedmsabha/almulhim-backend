@@ -159,7 +159,7 @@ export class DownloadsService {
     device: DeviceRequestContext,
     lessonVideoId: string,
   ): Promise<VideoStreamAccess> {
-    this.assertMobileDevice(device);
+    this.assertBoundMediaDevice(device);
 
     const lessonVideo = await this.loadAccessibleLessonVideo(
       user,
@@ -216,7 +216,7 @@ export class DownloadsService {
     device: DeviceRequestContext,
     lessonVideoId: string,
   ): Promise<VideoDownloadAuthorizeResponse> {
-    this.assertMobileDevice(device);
+    this.assertBoundMediaDevice(device);
 
     const lessonVideo = await this.loadAccessibleLessonVideo(
       user,
@@ -289,7 +289,7 @@ export class DownloadsService {
     device: DeviceRequestContext,
     lessonPdfId: string,
   ): Promise<PdfViewAuthorizeResponse> {
-    this.assertMobileDevice(device);
+    this.assertBoundMediaDevice(device);
 
     const lessonPdf = await this.loadAccessibleLessonPdf(user, lessonPdfId);
     const hasActiveSubscription = await this.hasActiveSubscription(user.id);
@@ -401,10 +401,19 @@ export class DownloadsService {
     }
   }
 
+  private assertBoundMediaDevice(device: DeviceRequestContext): void {
+    if (device.deviceType !== 'mobile' && device.deviceType !== 'web') {
+      throw new ForbiddenException(
+        'Media access requires a bound web or mobile device',
+      );
+    }
+  }
+
+  /** Offline download sync is mobile-only. */
   private assertMobileDevice(device: DeviceRequestContext): void {
     if (device.deviceType !== 'mobile') {
       throw new ForbiddenException(
-        'Media access is available on mobile devices only',
+        'Video downloads are available on mobile devices only',
       );
     }
   }
