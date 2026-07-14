@@ -12,6 +12,7 @@ import { RequiresRegistration } from '../../common/decorators/requires-registrat
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { DownloadsService } from './downloads.service';
 import type {
+  PdfViewAuthorizeResponse,
   VideoDownloadAuthorizeResponse,
   VideoDownloadListResponse,
 } from './types/download.response';
@@ -31,6 +32,19 @@ export class DownloadsController {
     return this.downloadsService.authorizeVideoDownloadFromRequest(
       request,
       lessonVideoId,
+    );
+  }
+
+  @ArcjetProtect('download-authorize')
+  @Post('pdfs/:lessonPdfId/authorize')
+  @RequiresDeviceBinding()
+  async authorizePdfView(
+    @Req() request: AuthenticatedRequest,
+    @Param('lessonPdfId', ParseUUIDPipe) lessonPdfId: string,
+  ): Promise<PdfViewAuthorizeResponse> {
+    return this.downloadsService.authorizePdfViewFromRequest(
+      request,
+      lessonPdfId,
     );
   }
 

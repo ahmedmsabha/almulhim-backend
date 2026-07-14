@@ -6,6 +6,12 @@ export type VideoDownloadAuthorizeResponse = {
   expiresAt: string;
 };
 
+/** Short-lived signed GET URL for in-app PDF viewing (no download record). */
+export type PdfViewAuthorizeResponse = {
+  url: string;
+  expiresAt: string;
+};
+
 export type VideoDownloadSyncItemResponse = {
   id: string;
   lessonVideoId: string;
@@ -25,6 +31,14 @@ export const toVideoDownloadAuthorizeResponse = (
   expiresAt: Date,
 ): VideoDownloadAuthorizeResponse => ({
   downloadId: download.id,
+  url,
+  expiresAt: expiresAt.toISOString(),
+});
+
+export const toPdfViewAuthorizeResponse = (
+  url: string,
+  expiresAt: Date,
+): PdfViewAuthorizeResponse => ({
   url,
   expiresAt: expiresAt.toISOString(),
 });

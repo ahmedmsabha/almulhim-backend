@@ -49,6 +49,7 @@ export class R2StorageService {
     // R2 does not fully support AWS SDK v3 default flexible checksums.
     // Leaving them on embeds `x-amz-checksum-*` into presigned PUT URLs and
     // can cause browser/client uploads to fail with 403 Access Denied.
+    // Match Cloudflare docs: virtual-hosted URLs (no forcePathStyle).
     this.client = new S3Client({
       region: 'auto',
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,

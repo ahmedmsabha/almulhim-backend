@@ -22,13 +22,21 @@ import {
   computeIsLocked,
 } from '../content/utils/content-access.utils';
 import {
+  toPdfViewAuthorizeResponse,
   toVideoDownloadAuthorizeResponse,
   toVideoDownloadSyncItemResponse,
+  type PdfViewAuthorizeResponse,
   type VideoDownloadAuthorizeResponse,
   type VideoDownloadListResponse,
 } from './types/download.response';
 
 type LessonVideoWithContext = {
+  id: string;
+  storageKey: string;
+  lesson: Lesson;
+};
+
+type LessonPdfWithContext = {
   id: string;
   storageKey: string;
   lesson: Lesson;
@@ -71,6 +79,17 @@ export class DownloadsService {
     }
 
     return this.listMyDownloads(request.user, request.device);
+  }
+
+  async authorizePdfViewFromRequest(
+    request: AuthenticatedRequest,
+    lessonPdfId: string,
+  ): Promise<PdfViewAuthorizeResponse> {
+    if (!request.user || !request.device) {
+      throw new NotFoundException('Device context is missing');
+    }
+
+    return this.authorizePdfView(request.user, request.device, lessonPdfId);
   }
 
   async authorizeVideoDownload(
@@ -126,6 +145,57 @@ export class DownloadsService {
 
       this.logger.error(
         `Failed to authorize video download ${lessonVideoId} for user ${user.id}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async authorizePdfView(
+    user: User,
+    device: DeviceRequestContext,
+    lessonPdfId: string,
+  ): Promise<PdfViewAuthorizeResponse> {
+    this.assertMobileDevice(device);
+
+    const lessonPdf = await this.loadAccessibleLessonPdf(user, lessonPdfId);
+    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+
+    if (
+      computeIsLocked(lessonPdf.lesson.accessLevel, hasActiveSubscription)
+    ) {
+      throw new NotFoundException('Lesson PDF not found');
+    }
+
+    const objectMetadata = await this.r2StorageService.headObject(
+      lessonPdf.storageKey,
+    );
+
+    if (!objectMetadata) {
+      throw new NotFoundException('Lesson PDF not found');
+    }
+
+    try {
+      const expiresInSeconds = this.configService.get(
+        'SIGNED_URL_TTL_SECONDS',
+        {
+          infer: true,
+        },
+      );
+      const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+      const url = await this.r2StorageService.createSignedGetUrl({
+        key: lessonPdf.storageKey,
+        expiresInSeconds,
+      });
+
+      return toPdfViewAuthorizeResponse(url, expiresAt);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      this.logger.error(
+        `Failed to authorize PDF view ${lessonPdfId} for user ${user.id}`,
         error,
       );
       throw error;
@@ -201,7 +271,7 @@ export class DownloadsService {
   private assertMobileDevice(device: DeviceRequestContext): void {
     if (device.deviceType !== 'mobile') {
       throw new ForbiddenException(
-        'Video downloads are available on mobile devices only',
+        'Media access is available on mobile devices only',
       );
     }
   }
@@ -239,6 +309,45 @@ export class DownloadsService {
 
       this.logger.error(
         `Failed to load lesson video ${lessonVideoId} for user ${user.id}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  private async loadAccessibleLessonPdf(
+    user: User,
+    lessonPdfId: string,
+  ): Promise<LessonPdfWithContext> {
+    try {
+      const lessonPdf = await this.prismaService.lessonPdf.findFirst({
+        where: {
+          id: lessonPdfId,
+          lesson: {
+            ...PUBLISHED_LESSON_WHERE,
+            chapter: {
+              ...PUBLISHED_CHAPTER_WHERE,
+              unit: buildUnitVisibilityWhere(user.region),
+            },
+          },
+        },
+        include: {
+          lesson: true,
+        },
+      });
+
+      if (!lessonPdf) {
+        throw new NotFoundException('Lesson PDF not found');
+      }
+
+      return lessonPdf;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      this.logger.error(
+        `Failed to load lesson PDF ${lessonPdfId} for user ${user.id}`,
         error,
       );
       throw error;

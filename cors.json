@@ -15,6 +15,21 @@
       },
       "exposeHeaders": ["ETag"],
       "maxAgeSeconds": 3600
+    },
+    {
+      "allowed": {
+        "origins": ["*"],
+        "methods": ["GET", "HEAD"],
+        "headers": ["Range", "Authorization"]
+      },
+      "exposeHeaders": [
+        "ETag",
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "Content-Type"
+      ],
+      "maxAgeSeconds": 3600
     }
   ]
 }

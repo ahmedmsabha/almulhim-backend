@@ -25,7 +25,8 @@
     "prisma:migrate": "prisma migrate dev",
     "postinstall": "prisma generate",
     "seed:student": "ts-node --transpile-only scripts/add-student.ts",
-    "seed:content": "ts-node --transpile-only scripts/seed-content.ts"
+    "seed:content": "ts-node --transpile-only scripts/seed-content.ts",
+    "probe:r2": "ts-node --transpile-only scripts/probe-r2-signed-get.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.3",
