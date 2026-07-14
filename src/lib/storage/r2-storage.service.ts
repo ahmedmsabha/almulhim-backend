@@ -33,6 +33,14 @@ export type ObjectMetadata = {
   contentLength: number | undefined;
 };
 
+export type ObjectStreamResult = {
+  body: import('stream').Readable;
+  contentType: string;
+  contentLength: number | undefined;
+  contentRange: string | undefined;
+  statusCode: 200 | 206;
+};
+
 @Injectable()
 export class R2StorageService {
   private readonly logger = new Logger(R2StorageService.name);
@@ -194,6 +202,46 @@ export class R2StorageService {
       }
 
       this.logger.error(`Object download failed for key: ${key}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Stream an object (optional HTTP Range) for Nest → client proxying.
+   * Needed because R2 GetObject-signed URLs reject HEAD (403), which breaks iOS AVPlayer.
+   */
+  async getObjectStream(
+    key: string,
+    rangeHeader?: string,
+  ): Promise<ObjectStreamResult | null> {
+    try {
+      const result = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          ...(rangeHeader ? { Range: rangeHeader } : {}),
+        }),
+      );
+
+      if (!result.Body) {
+        return null;
+      }
+
+      const body = result.Body as import('stream').Readable;
+
+      return {
+        body,
+        contentType: result.ContentType ?? 'application/octet-stream',
+        contentLength: result.ContentLength,
+        contentRange: result.ContentRange,
+        statusCode: result.ContentRange ? 206 : 200,
+      };
+    } catch (error) {
+      if (error instanceof NotFound) {
+        return null;
+      }
+
+      this.logger.error(`Object stream failed for key: ${key}`, error);
       throw error;
     }
   }

@@ -16,7 +16,11 @@ import type {
   VideoDownload,
 } from '../../generated/prisma/client';
 import { PrismaService } from '../../lib/database/prisma.service';
-import { R2StorageService } from '../../lib/storage/r2-storage.service';
+import {
+  R2StorageService,
+  type ObjectMetadata,
+  type ObjectStreamResult,
+} from '../../lib/storage/r2-storage.service';
 import {
   buildUnitVisibilityWhere,
   computeIsLocked,
@@ -45,6 +49,12 @@ type LessonPdfWithContext = {
 const PUBLISHED_LESSON_WHERE = { isPublished: true } as const;
 
 const PUBLISHED_CHAPTER_WHERE = { isPublished: true } as const;
+
+export type VideoStreamAccess = {
+  storageKey: string;
+  contentType: string;
+  contentLength: number | undefined;
+};
 
 @Injectable()
 export class DownloadsService {
@@ -90,6 +100,82 @@ export class DownloadsService {
     }
 
     return this.authorizePdfView(request.user, request.device, lessonPdfId);
+  }
+
+  /**
+   * Resolve an accessible lesson video for Nest-proxied streaming (HEAD/GET + Range).
+   * R2 GetObject-signed URLs reject HEAD → iOS AVPlayer fails; Nest HEAD works.
+   */
+  async resolveVideoStreamAccessFromRequest(
+    request: AuthenticatedRequest,
+    lessonVideoId: string,
+  ): Promise<VideoStreamAccess> {
+    if (!request.user || !request.device) {
+      throw new NotFoundException('Device context is missing');
+    }
+
+    return this.resolveVideoStreamAccess(
+      request.user,
+      request.device,
+      lessonVideoId,
+    );
+  }
+
+  async resolveVideoStreamAccess(
+    user: User,
+    device: DeviceRequestContext,
+    lessonVideoId: string,
+  ): Promise<VideoStreamAccess> {
+    this.assertMobileDevice(device);
+
+    const lessonVideo = await this.loadAccessibleLessonVideo(
+      user,
+      lessonVideoId,
+    );
+    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+
+    if (
+      computeIsLocked(lessonVideo.lesson.accessLevel, hasActiveSubscription)
+    ) {
+      throw new NotFoundException('Lesson video not found');
+    }
+
+    const objectMetadata = await this.r2StorageService.headObject(
+      lessonVideo.storageKey,
+    );
+
+    if (!objectMetadata) {
+      throw new NotFoundException('Lesson video not found');
+    }
+
+    return {
+      storageKey: lessonVideo.storageKey,
+      contentType: objectMetadata.contentType ?? 'video/mp4',
+      contentLength: objectMetadata.contentLength,
+    };
+  }
+
+  headVideoMetadata(access: VideoStreamAccess): ObjectMetadata {
+    return {
+      contentType: access.contentType,
+      contentLength: access.contentLength,
+    };
+  }
+
+  async openVideoStream(
+    access: VideoStreamAccess,
+    rangeHeader?: string,
+  ): Promise<ObjectStreamResult> {
+    const stream = await this.r2StorageService.getObjectStream(
+      access.storageKey,
+      rangeHeader,
+    );
+
+    if (!stream) {
+      throw new NotFoundException('Lesson video not found');
+    }
+
+    return stream;
   }
 
   async authorizeVideoDownload(
