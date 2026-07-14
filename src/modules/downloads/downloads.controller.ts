@@ -6,11 +6,14 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Req,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ArcjetProtect } from '../../common/decorators/arcjet-protect.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { RequiresDeviceBinding } from '../../common/decorators/requires-device-binding.decorator';
 import { RequiresRegistration } from '../../common/decorators/requires-registration.decorator';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
@@ -41,31 +44,38 @@ export class DownloadsController {
 
   /**
    * Proxied video stream for iOS AVPlayer.
-   * R2 GetObject-signed URLs return 403 on HEAD; Nest supports HEAD + Range.
+   * Auth via short-lived `ticket` query param (AVPlayer cannot reliably send Bearer headers).
    */
+  @Public()
   @ArcjetProtect('download-authorize')
   @Get('videos/:lessonVideoId/stream')
-  @RequiresDeviceBinding()
   async streamVideoGet(
-    @Req() request: AuthenticatedRequest,
     @Res() response: Response,
     @Param('lessonVideoId', ParseUUIDPipe) lessonVideoId: string,
+    @Query('ticket') ticket: string | undefined,
     @Headers('range') rangeHeader?: string,
   ): Promise<void> {
-    await this.pipeVideoStream(request, response, lessonVideoId, rangeHeader);
+    if (!ticket) {
+      throw new UnauthorizedException('Missing stream ticket');
+    }
+    await this.pipeVideoStream(response, lessonVideoId, ticket, rangeHeader);
   }
 
+  @Public()
   @ArcjetProtect('download-authorize')
   @Head('videos/:lessonVideoId/stream')
-  @RequiresDeviceBinding()
   async streamVideoHead(
-    @Req() request: AuthenticatedRequest,
     @Res() response: Response,
     @Param('lessonVideoId', ParseUUIDPipe) lessonVideoId: string,
+    @Query('ticket') ticket: string | undefined,
   ): Promise<void> {
+    if (!ticket) {
+      throw new UnauthorizedException('Missing stream ticket');
+    }
+
     const access =
-      await this.downloadsService.resolveVideoStreamAccessFromRequest(
-        request,
+      await this.downloadsService.resolveVideoStreamAccessFromTicket(
+        ticket,
         lessonVideoId,
       );
     const meta = this.downloadsService.headVideoMetadata(access);
@@ -101,14 +111,14 @@ export class DownloadsController {
   }
 
   private async pipeVideoStream(
-    request: AuthenticatedRequest,
     response: Response,
     lessonVideoId: string,
+    ticket: string,
     rangeHeader?: string,
   ): Promise<void> {
     const access =
-      await this.downloadsService.resolveVideoStreamAccessFromRequest(
-        request,
+      await this.downloadsService.resolveVideoStreamAccessFromTicket(
+        ticket,
         lessonVideoId,
       );
     const stream = await this.downloadsService.openVideoStream(

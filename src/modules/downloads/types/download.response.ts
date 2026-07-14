@@ -2,7 +2,13 @@ import type { VideoDownload } from '../../../generated/prisma/client';
 
 export type VideoDownloadAuthorizeResponse = {
   downloadId: string;
+  /** R2 signed GET URL (offline / download use). Prefer streamTicket for AVPlayer. */
   url: string;
+  /**
+   * HMAC ticket for `GET|HEAD /downloads/videos/:id/stream?ticket=…`.
+   * Needed because expo-video/AVPlayer often cannot attach Authorization headers.
+   */
+  streamTicket: string;
   expiresAt: string;
 };
 
@@ -28,10 +34,12 @@ export type VideoDownloadListResponse = {
 export const toVideoDownloadAuthorizeResponse = (
   download: VideoDownload,
   url: string,
+  streamTicket: string,
   expiresAt: Date,
 ): VideoDownloadAuthorizeResponse => ({
   downloadId: download.id,
   url,
+  streamTicket,
   expiresAt: expiresAt.toISOString(),
 });
 

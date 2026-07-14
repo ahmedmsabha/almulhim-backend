@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppEnv } from '../../config/env.schema';
@@ -25,6 +26,10 @@ import {
   buildUnitVisibilityWhere,
   computeIsLocked,
 } from '../content/utils/content-access.utils';
+import {
+  createVideoStreamTicket,
+  verifyVideoStreamTicket,
+} from './stream-ticket';
 import {
   toPdfViewAuthorizeResponse,
   toVideoDownloadAuthorizeResponse,
@@ -106,6 +111,34 @@ export class DownloadsService {
    * Resolve an accessible lesson video for Nest-proxied streaming (HEAD/GET + Range).
    * R2 GetObject-signed URLs reject HEAD → iOS AVPlayer fails; Nest HEAD works.
    */
+  async resolveVideoStreamAccessFromTicket(
+    ticket: string,
+    lessonVideoId: string,
+  ): Promise<VideoStreamAccess> {
+    const pepper = this.configService.get('DEVICE_HASH_PEPPER', { infer: true });
+    const claims = verifyVideoStreamTicket(ticket, pepper);
+
+    if (claims.lessonVideoId !== lessonVideoId) {
+      throw new UnauthorizedException('Stream ticket mismatch');
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: { id: claims.userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Stream ticket user not found');
+    }
+
+    const device: DeviceRequestContext = {
+      deviceType: 'mobile',
+      deviceHash: claims.deviceHash,
+      deviceIdentifier: 'ticket',
+    };
+
+    return this.resolveVideoStreamAccess(user, device, lessonVideoId);
+  }
+
   async resolveVideoStreamAccessFromRequest(
     request: AuthenticatedRequest,
     lessonVideoId: string,
@@ -222,8 +255,22 @@ export class DownloadsService {
         key: lessonVideo.storageKey,
         expiresInSeconds,
       });
+      const streamTicket = createVideoStreamTicket(
+        {
+          userId: user.id,
+          lessonVideoId,
+          deviceHash: device.deviceHash,
+          exp: Math.floor(expiresAt.getTime() / 1000),
+        },
+        this.configService.get('DEVICE_HASH_PEPPER', { infer: true }),
+      );
 
-      return toVideoDownloadAuthorizeResponse(download, url, expiresAt);
+      return toVideoDownloadAuthorizeResponse(
+        download,
+        url,
+        streamTicket,
+        expiresAt,
+      );
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

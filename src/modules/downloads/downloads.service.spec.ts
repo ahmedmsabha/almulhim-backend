@@ -95,7 +95,12 @@ describe('DownloadsService', () => {
       get: jest.fn().mockReturnValue(900),
     } as unknown as ConfigService);
     configService = {
-      get: jest.fn().mockReturnValue(900),
+      get: jest.fn().mockImplementation((key: string) => {
+        if (key === 'DEVICE_HASH_PEPPER') {
+          return 'test-device-hash-pepper-value';
+        }
+        return 900;
+      }),
     } as unknown as ConfigService;
 
     downloadsService = new DownloadsService(
@@ -155,6 +160,7 @@ describe('DownloadsService', () => {
 
       expect(result.downloadId).toBe('550e8400-e29b-41d4-a716-446655440060');
       expect(result.url).toBe('https://r2.example.com/signed-video');
+      expect(result.streamTicket).toEqual(expect.any(String));
       expect(result.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(r2StorageService.createSignedGetUrl).toHaveBeenCalledWith({
         key: lessonVideo.storageKey,
