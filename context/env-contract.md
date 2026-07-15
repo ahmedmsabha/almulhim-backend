@@ -83,7 +83,7 @@ PUSH_NOTIFICATIONS_ENABLED=false
 ```
 
 `SIGNED_URL_TTL_SECONDS` defaults to `900` when omitted.
-`PUSH_NOTIFICATIONS_ENABLED` defaults to `false`. Keep it false until Mobile registers Expo push tokens; in-app `Notification` rows are still created on publish.
+`PUSH_NOTIFICATIONS_ENABLED` defaults to `false`. Set `true` to deliver Expo OS pushes on lesson/announcement publish (in-app `Notification` rows are always created). Requires students to have registered a mobile push token.
 
 ---
 

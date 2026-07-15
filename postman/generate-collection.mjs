@@ -469,7 +469,7 @@ const collection = {
                     passed: true,
                     verifiedAt: '2026-02-01T12:30:00.000Z',
                     aiEnabled: true,
-                    model: 'gemini-3.5-flash',
+                    model: 'gemini-3.1-flash-lite',
                     error: null,
                     checks: {
                       recipientMatch: {
@@ -536,7 +536,7 @@ const collection = {
                 passed: true,
                 verifiedAt: '2026-02-01T12:30:00.000Z',
                 aiEnabled: true,
-                model: 'gemini-3.5-flash',
+                model: 'gemini-3.1-flash-lite',
                 error: null,
                 checks: {
                   recipientMatch: {

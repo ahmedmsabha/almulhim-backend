@@ -8,7 +8,19 @@ jest.mock('../../lib/database/prisma.service', () => ({
       findFirst: jest.fn(),
     };
 
+    lessonPdf = {
+      findFirst: jest.fn(),
+    };
+
     videoDownload = {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    };
+
+    pdfDownload = {
       findFirst: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
@@ -271,6 +283,7 @@ describe('DownloadsService', () => {
           },
         },
       ]);
+      jest.spyOn(prismaService.pdfDownload, 'findMany').mockResolvedValue([]);
 
       await expect(
         downloadsService.listMyDownloads(studentUser, mobileDevice),
@@ -285,6 +298,7 @@ describe('DownloadsService', () => {
             isAccessValid: true,
           },
         ],
+        pdfDownloads: [],
       });
     });
 
@@ -330,6 +344,7 @@ describe('DownloadsService', () => {
           },
         },
       ]);
+      jest.spyOn(prismaService.pdfDownload, 'findMany').mockResolvedValue([]);
 
       const result = await downloadsService.listMyDownloads(
         studentUser,
@@ -345,9 +360,12 @@ describe('DownloadsService', () => {
   });
 
   describe('revokeDownloads', () => {
-    it('revokes active downloads for a user and optional device hash', async () => {
+    it('revokes active video and PDF downloads for a user and optional device hash', async () => {
       jest
         .spyOn(prismaService.videoDownload, 'updateMany')
+        .mockResolvedValue({ count: 1 });
+      jest
+        .spyOn(prismaService.pdfDownload, 'updateMany')
         .mockResolvedValue({ count: 1 });
 
       await downloadsService.revokeDownloads(studentUser.id, {
@@ -355,6 +373,16 @@ describe('DownloadsService', () => {
       });
 
       expect(prismaService.videoDownload.updateMany).toHaveBeenCalledWith({
+        where: {
+          userId: studentUser.id,
+          revokedAt: null,
+          deviceHash: mobileDevice.deviceHash,
+        },
+        data: {
+          revokedAt: expect.any(Date),
+        },
+      });
+      expect(prismaService.pdfDownload.updateMany).toHaveBeenCalledWith({
         where: {
           userId: studentUser.id,
           revokedAt: null,

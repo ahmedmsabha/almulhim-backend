@@ -23,7 +23,7 @@ jest.mock('../../lib/ai/ai-provider.service', () => ({
     getExpectedRecipientNames = jest.fn();
     analyzeReceipt = jest.fn();
   },
-  RECEIPT_VERIFICATION_MODEL: 'gemini-3.5-flash',
+  RECEIPT_VERIFICATION_MODEL: 'gemini-3.1-flash-lite',
 }));
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
@@ -437,7 +437,7 @@ describe('ReceiptVerificationService', () => {
           passed: false,
           verifiedAt: new Date().toISOString(),
           aiEnabled: true,
-          model: 'gemini-3.5-flash',
+          model: 'gemini-3.1-flash-lite',
           error: null,
           checks: {
             recipientMatch: {

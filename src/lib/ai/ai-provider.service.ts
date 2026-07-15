@@ -12,8 +12,9 @@ import {
   type ReceiptAnalysis,
 } from './schemas/receipt-analysis.schema';
 
-export const RECEIPT_VERIFICATION_MODEL = 'gemini-3.5-flash';
-export const CONTENT_SEARCH_MODEL = 'gemini-3.5-flash';
+/** Cost-efficient multimodal Flash-Lite — receipt OCR + content search. */
+export const RECEIPT_VERIFICATION_MODEL = 'gemini-3.1-flash-lite';
+export const CONTENT_SEARCH_MODEL = 'gemini-3.1-flash-lite';
 
 export type AnalyzeReceiptInput = {
   imageBuffer: Buffer;

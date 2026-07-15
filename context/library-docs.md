@@ -273,8 +273,8 @@ Project rules:
 - business orchestration lives in feature modules (`receipt-verification.service.ts`, `content.service.ts`)
 - use an internal provider abstraction so the model vendor can change without affecting business logic
 - Gemini is the default provider for v1 through the Vercel AI SDK
-  - Receipts: `RECEIPT_VERIFICATION_MODEL` = `gemini-3.5-flash`
-  - Content search: `CONTENT_SEARCH_MODEL` = `gemini-3.5-flash`
+  - Receipts: `RECEIPT_VERIFICATION_MODEL` = `gemini-3.1-flash-lite`
+  - Content search: `CONTENT_SEARCH_MODEL` = `gemini-3.1-flash-lite`
 - prompts stay server-side only
 - always persist structured verification output in `subscriptions.verification_result`
 - admin remains the final decision maker — failed AI checks stay in `pending_review` until step 09

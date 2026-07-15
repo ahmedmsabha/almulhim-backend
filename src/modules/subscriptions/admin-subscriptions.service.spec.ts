@@ -199,7 +199,7 @@ describe('AdminSubscriptionsService', () => {
         passed: false,
         verifiedAt: '2026-07-01T10:05:00.000Z',
         aiEnabled: true,
-        model: 'gemini-3.5-flash',
+        model: 'gemini-3.1-flash-lite',
         error: 'Gemini timed out',
         checks: {
           recipientMatch: {
@@ -255,7 +255,7 @@ describe('AdminSubscriptionsService', () => {
         passed: true,
         verifiedAt: '2026-07-01T10:00:00.000Z',
         aiEnabled: true,
-        model: 'gemini-3.5-flash',
+        model: 'gemini-3.1-flash-lite',
         error: null,
         checks: {
           recipientMatch: {

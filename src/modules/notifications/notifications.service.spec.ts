@@ -25,12 +25,18 @@ import { NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { User } from '../../generated/prisma/client';
 import { PrismaService } from '../../lib/database/prisma.service';
+import type { ExpoPushSender } from './expo-push.sender';
 import { NotificationsService } from './notifications.service';
 
 describe('NotificationsService', () => {
   let notificationsService: NotificationsService;
   let prismaService: PrismaService;
   let configService: { get: jest.Mock };
+  let expoPushSender: {
+    isExpoPushToken: jest.Mock;
+    chunkPushNotifications: jest.Mock;
+    sendPushNotificationsAsync: jest.Mock;
+  };
 
   const userId = '550e8400-e29b-41d4-a716-446655440001';
   const student: User = {
@@ -63,12 +69,33 @@ describe('NotificationsService', () => {
     configService = {
       get: jest.fn().mockReturnValue(false),
     };
+    expoPushSender = {
+      isExpoPushToken: jest.fn(
+        (token: unknown) =>
+          typeof token === 'string' && token.startsWith('ExponentPushToken['),
+      ),
+      chunkPushNotifications: jest.fn((messages: unknown[]) => [messages]),
+      sendPushNotificationsAsync: jest
+        .fn()
+        .mockResolvedValue([{ status: 'ok', id: 'ticket-1' }]),
+    };
     notificationsService = new NotificationsService(
       prismaService,
       configService as unknown as ConfigService,
+      expoPushSender as unknown as ExpoPushSender,
     );
     jest.clearAllMocks();
     configService.get.mockReturnValue(false);
+    expoPushSender.isExpoPushToken.mockImplementation(
+      (token: unknown) =>
+        typeof token === 'string' && token.startsWith('ExponentPushToken['),
+    );
+    expoPushSender.chunkPushNotifications.mockImplementation(
+      (messages: unknown[]) => [messages],
+    );
+    expoPushSender.sendPushNotificationsAsync.mockResolvedValue([
+      { status: 'ok', id: 'ticket-1' },
+    ]);
   });
 
   describe('notifyRegion', () => {
@@ -108,6 +135,7 @@ describe('NotificationsService', () => {
         ],
       });
       expect(prismaService.deviceBinding.findMany).not.toHaveBeenCalled();
+      expect(expoPushSender.sendPushNotificationsAsync).not.toHaveBeenCalled();
     });
 
     it('targets all active students when region is both', async () => {
@@ -147,7 +175,7 @@ describe('NotificationsService', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('looks up push tokens when PUSH_NOTIFICATIONS_ENABLED is true', async () => {
+    it('sends Expo pushes when PUSH_NOTIFICATIONS_ENABLED is true', async () => {
       configService.get.mockReturnValue(true);
       jest
         .spyOn(prismaService.user, 'findMany')
@@ -176,6 +204,81 @@ describe('NotificationsService', () => {
           pushToken: { not: null },
         },
         select: { id: true, pushToken: true },
+      });
+      expect(expoPushSender.sendPushNotificationsAsync).toHaveBeenCalledWith([
+        {
+          to: 'ExponentPushToken[test]',
+          title: 'درس جديد',
+          body: 'Lesson One',
+          sound: 'default',
+          channelId: 'default',
+          data: {
+            type: 'lesson_published',
+            entityId: notification.entityId,
+          },
+        },
+      ]);
+    });
+
+    it('does not send push when enabled but no mobile tokens exist', async () => {
+      configService.get.mockReturnValue(true);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([{ id: userId }] as never);
+      jest
+        .spyOn(prismaService.notification, 'createMany')
+        .mockResolvedValue({ count: 1 });
+      jest
+        .spyOn(prismaService.deviceBinding, 'findMany')
+        .mockResolvedValue([] as never);
+
+      await notificationsService.notifyRegion({
+        region: 'gaza',
+        type: 'lesson_published',
+        entityId: notification.entityId,
+        title: 'درس جديد',
+        body: 'Lesson One',
+      });
+
+      expect(expoPushSender.sendPushNotificationsAsync).not.toHaveBeenCalled();
+    });
+
+    it('clears pushToken when Expo returns DeviceNotRegistered', async () => {
+      configService.get.mockReturnValue(true);
+      jest
+        .spyOn(prismaService.user, 'findMany')
+        .mockResolvedValue([{ id: userId }] as never);
+      jest
+        .spyOn(prismaService.notification, 'createMany')
+        .mockResolvedValue({ count: 1 });
+      jest
+        .spyOn(prismaService.deviceBinding, 'findMany')
+        .mockResolvedValue([
+          { id: 'binding-1', pushToken: 'ExponentPushToken[stale]' },
+        ] as never);
+      jest
+        .spyOn(prismaService.deviceBinding, 'update')
+        .mockResolvedValue({} as never);
+
+      expoPushSender.sendPushNotificationsAsync.mockResolvedValue([
+        {
+          status: 'error',
+          message: 'Not registered',
+          details: { error: 'DeviceNotRegistered' },
+        },
+      ]);
+
+      await notificationsService.notifyRegion({
+        region: 'gaza',
+        type: 'lesson_published',
+        entityId: notification.entityId,
+        title: 'درس جديد',
+        body: 'Lesson One',
+      });
+
+      expect(prismaService.deviceBinding.update).toHaveBeenCalledWith({
+        where: { id: 'binding-1' },
+        data: { pushToken: null },
       });
     });
   });

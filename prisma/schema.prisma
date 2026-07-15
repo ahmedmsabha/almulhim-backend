@@ -67,6 +67,7 @@ model User {
   supportRequests SupportRequest[]
   deviceBindings  DeviceBinding[]
   videoDownloads  VideoDownload[]
+  pdfDownloads    PdfDownload[]
   notifications   Notification[]
 
   @@index([deactivatedAt])
@@ -198,7 +199,8 @@ model LessonPdf {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  downloads PdfDownload[]
 
   @@index([lessonId, sortOrder])
   @@map("lesson_pdfs")
@@ -291,4 +293,22 @@ model VideoDownload {
   @@index([userId, lessonVideoId])
   @@index([lessonVideoId, revokedAt])
   @@map("video_downloads")
+}
+
+model PdfDownload {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  lessonPdfId String    @map("lesson_pdf_id") @db.Uuid
+  deviceHash  String    @map("device_hash")
+  downloadedAt DateTime @default(now()) @map("downloaded_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonPdf LessonPdf @relation(fields: [lessonPdfId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lessonPdfId])
+  @@index([lessonPdfId, revokedAt])
+  @@map("pdf_downloads")
 }

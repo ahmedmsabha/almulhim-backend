@@ -139,7 +139,7 @@ Rules:
 
 - Publishing a lesson or announcement creates in-app `Notification` rows for matching active students.
 - Region targeting: content `gaza`/`west_bank` → students in that region; content `both` → all active students. Deactivated students are excluded.
-- Push send is gated by `PUSH_NOTIFICATIONS_ENABLED` and remains a no-op stub until Mobile registers tokens via `POST /notifications/register-token`.
+- Push send is gated by `PUSH_NOTIFICATIONS_ENABLED`. When enabled, Nest sends Expo pushes (chunked via `expo-server-sdk`) to mobile bindings that have a registered token from `POST /notifications/register-token`. Payload `data` includes `{ type, entityId }` for mobile deep links. `DeviceNotRegistered` clears the binding `pushToken`.
 - Notification failures must never block publish responses (`notifyRegion` swallows errors).
 
 ---

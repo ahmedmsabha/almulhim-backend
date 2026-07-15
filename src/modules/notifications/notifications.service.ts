@@ -1,9 +1,14 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ZodError } from 'zod';
 import type { AppEnv } from '../../config/env.schema';
 import type { ContentRegion, User } from '../../generated/prisma/client';
 import { PrismaService } from '../../lib/database/prisma.service';
+import {
+  ExpoPushSender,
+  type ExpoPushMessage,
+  type ExpoPushTicket,
+} from './expo-push.sender';
 import {
   listNotificationsQuerySchema,
   registerPushTokenSchema,
@@ -27,14 +32,23 @@ export type NotifyRegionParams = {
   body: string;
 };
 
+type PushRecipient = {
+  bindingId: string;
+  pushToken: string;
+};
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
+  private readonly expoPushSender: ExpoPushSender;
 
   constructor(
     private readonly prismaService: PrismaService,
     private readonly configService: ConfigService<AppEnv, true>,
-  ) {}
+    @Optional() expoPushSender?: ExpoPushSender,
+  ) {
+    this.expoPushSender = expoPushSender ?? new ExpoPushSender();
+  }
 
   /**
    * Creates in-app notification rows for matching students and optionally
@@ -91,12 +105,28 @@ export class NotificationsService {
         return;
       }
 
-      // TODO: batch via expo-server-sdk once Mobile registers real Expo push tokens.
-      // Package `expo-server-sdk` is installed; do not wire chunked send until
-      // end-to-end testing against a real device is possible.
-      this.logger.debug(
-        `Push stub: ${bindings.length} mobile token(s) ready for ${params.type} ${params.entityId}`,
-      );
+      const recipients: PushRecipient[] = [];
+      for (const binding of bindings) {
+        if (!binding.pushToken) {
+          continue;
+        }
+        if (!this.expoPushSender.isExpoPushToken(binding.pushToken)) {
+          this.logger.warn(
+            `Skipping invalid Expo push token on binding ${binding.id}`,
+          );
+          continue;
+        }
+        recipients.push({
+          bindingId: binding.id,
+          pushToken: binding.pushToken,
+        });
+      }
+
+      if (recipients.length === 0) {
+        return;
+      }
+
+      await this.sendExpoPushes(recipients, params);
     } catch (error) {
       // Must stay visible in Nest logs — publish still succeeds when this path fails.
       this.logger.error(
@@ -104,6 +134,80 @@ export class NotificationsService {
         error instanceof Error ? error.stack : String(error),
       );
     }
+  }
+
+  /**
+   * Sends Expo push messages in SDK-sized chunks. Clears pushToken on
+   * DeviceNotRegistered so later publishes skip dead tokens.
+   */
+  private async sendExpoPushes(
+    recipients: PushRecipient[],
+    params: NotifyRegionParams,
+  ): Promise<void> {
+    const messages: ExpoPushMessage[] = recipients.map((recipient) => ({
+      to: recipient.pushToken,
+      title: params.title,
+      body: params.body,
+      sound: 'default',
+      channelId: 'default',
+      data: {
+        type: params.type,
+        entityId: params.entityId,
+      },
+    }));
+
+    const chunks = this.expoPushSender.chunkPushNotifications(messages);
+    let messageOffset = 0;
+
+    for (const chunk of chunks) {
+      let tickets: ExpoPushTicket[];
+      try {
+        tickets = await this.expoPushSender.sendPushNotificationsAsync(chunk);
+      } catch (error) {
+        this.logger.error(
+          `Failed to send Expo push chunk for ${params.type} ${params.entityId}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+        messageOffset += chunk.length;
+        continue;
+      }
+
+      for (let index = 0; index < tickets.length; index += 1) {
+        const ticket = tickets[index];
+        const recipient = recipients[messageOffset + index];
+        if (!ticket || !recipient) {
+          continue;
+        }
+
+        if (ticket.status === 'ok') {
+          continue;
+        }
+
+        this.logger.warn(
+          `Expo push ticket error for binding ${recipient.bindingId}: ${ticket.message}`,
+        );
+
+        if (ticket.details?.error === 'DeviceNotRegistered') {
+          try {
+            await this.prismaService.deviceBinding.update({
+              where: { id: recipient.bindingId },
+              data: { pushToken: null },
+            });
+          } catch (error) {
+            this.logger.error(
+              `Failed to clear stale push token on binding ${recipient.bindingId}`,
+              error instanceof Error ? error.stack : String(error),
+            );
+          }
+        }
+      }
+
+      messageOffset += chunk.length;
+    }
+
+    this.logger.debug(
+      `Expo push sent to ${recipients.length} device(s) for ${params.type} ${params.entityId}`,
+    );
   }
 
   async listMine(

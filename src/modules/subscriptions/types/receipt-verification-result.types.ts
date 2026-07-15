@@ -33,7 +33,7 @@ export type ReceiptVerificationResult = {
   /** ISO-8601 timestamp when verification ran */
   verifiedAt: string;
   aiEnabled: boolean;
-  /** e.g. `gemini-3.5-flash` when AI ran; null when skipped */
+  /** e.g. `gemini-3.1-flash-lite` when AI ran; null when skipped */
   model: string | null;
   /** Pipeline/Gemini error message when verification could not complete */
   error: string | null;

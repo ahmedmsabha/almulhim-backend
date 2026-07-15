@@ -8,7 +8,7 @@ It serves three clients:
 | ------------------ | ------------------------------------------------------------------------------------------------- |
 | Student Web App    | Profile, content browsing, subscriptions, announcements, support                                  |
 | Admin Web App      | Student management, content publishing, subscription review, support replies, analytics dashboard |
-| Student Mobile App | Offline sync, secure video downloads, device binding                                              |
+| Student Mobile App | Offline sync, secure video/PDF downloads, device binding |
 
 ---
 
@@ -173,8 +173,9 @@ Admin routes are colocated inside feature modules (e.g. `content/admin/*`, `anal
 | POST   | `/devices/bind`                              | Bind web or mobile device                  |
 | GET    | `/devices/me`                                | List own device bindings                   |
 | POST   | `/devices/heartbeat`                         | Device heartbeat (requires device headers) |
-| POST   | `/downloads/videos/:lessonVideoId/authorize` | Mobile download authorization              |
-| GET    | `/downloads/me`                              | Download sync metadata                     |
+| POST   | `/downloads/videos/:lessonVideoId/authorize` | Mobile/web video authorize + mobile download record |
+| POST   | `/downloads/pdfs/:lessonPdfId/authorize`     | PDF view/download URL; mobile creates sync record   |
+| GET    | `/downloads/me`                              | Video + PDF download sync metadata (mobile)         |
 | GET    | `/notifications`                             | Paginated own notifications (newest first) |
 | GET    | `/notifications/unread-count`                | Unread notification count                  |
 | PATCH  | `/notifications/:id/read`                    | Mark one notification read                 |
@@ -183,7 +184,7 @@ Admin routes are colocated inside feature modules (e.g. `content/admin/*`, `anal
 
 **Shared content search** (`POST /content/search`) — any registered user (`student` or `admin`):
 
-Clients already loaded their authorized tree (`GET /content/tree` or `GET /content/admin/tree`), flatten visible units/chapters/lessons, and POST that list with a query. The server matches intent via Gemini (`CONTENT_SEARCH_MODEL` = `gemini-3.5-flash`) and returns `{ matchingIds }` — a subset of the request item ids only (hard post-filter). Matching is **not** an access-control boundary; the client must only send items it is allowed to show. Requires `CONTENT_SEARCH_AI_ENABLED=true` (reuses `GOOGLE_GENERATIVE_AI_API_KEY`). Arcjet profile: `content-search` (30 requests / minute / user). On AI failure or when disabled → `503` so clients can keep a local substring fallback.
+Clients already loaded their authorized tree (`GET /content/tree` or `GET /content/admin/tree`), flatten visible units/chapters/lessons, and POST that list with a query. The server matches intent via Gemini (`CONTENT_SEARCH_MODEL` = `gemini-3.1-flash-lite`) and returns `{ matchingIds }` — a subset of the request item ids only (hard post-filter). Matching is **not** an access-control boundary; the client must only send items it is allowed to show. Requires `CONTENT_SEARCH_AI_ENABLED=true` (reuses `GOOGLE_GENERATIVE_AI_API_KEY`). Arcjet profile: `content-search` (30 requests / minute / user). On AI failure or when disabled → `503` so clients can keep a local substring fallback.
 
 ### Admin (`@Roles('admin')`)
 
@@ -262,7 +263,7 @@ Clerk sync is fail-closed for deactivate/reactivate (Nest rolled back / left unc
 | `passed`                | Overall pass when recipient, sender, and not-duplicate checks all pass         |
 | `verifiedAt`            | ISO-8601 timestamp when verification ran                                       |
 | `aiEnabled`             | `false` when `RECEIPT_AI_ENABLED=false` (skip path); `true` when Gemini ran    |
-| `model`                 | e.g. `gemini-3.5-flash` when AI ran; `null` when skipped                       |
+| `model`                 | e.g. `gemini-3.1-flash-lite` when AI ran; `null` when skipped                       |
 | `error`                 | Pipeline/Gemini failure message; `null` on success                             |
 | `checks.recipientMatch` | `{ passed, detected, reason }` — payee vs expected teacher names               |
 | `checks.senderMatch`    | `{ passed, detected, expected?, reason }` — payer vs student-entered sender    |
@@ -277,7 +278,7 @@ Example (passing AI run):
   "passed": true,
   "verifiedAt": "2026-07-01T10:00:00.000Z",
   "aiEnabled": true,
-  "model": "gemini-3.5-flash",
+  "model": "gemini-3.1-flash-lite",
   "error": null,
   "checks": {
     "recipientMatch": {
@@ -319,7 +320,7 @@ X-Device-Type: web | mobile
 - **Student lifecycle:** Deactivate = soft block (`deactivatedAt` + Clerk ban); Delete = hard remove Nest user (cascade student-owned rows) + Clerk user delete. Nest `clerkId` is always required and kept in sync with Clerk
 - **Content access:** Preview lessons are free by region; subscriber-only lessons require an active non-expired subscription
 - **Devices:** One web + one mobile device per student; identifiers stored as hashes only
-- **Notifications:** In-app rows on lesson/announcement publish (region-targeted); Expo push stubbed until Mobile registers tokens (`PUSH_NOTIFICATIONS_ENABLED=false`)
+- **Notifications:** In-app rows on lesson/announcement publish (region-targeted); Expo OS push via `expo-server-sdk` when `PUSH_NOTIFICATIONS_ENABLED=true` and mobile tokens are registered
 - **Downloads:** Mobile-only; short-lived signed URLs; revocable on admin device reset
 - **Receipts:** Admin-only access; AI verification with duplicate transaction reference enforcement
 - **Files:** All private media served via server-generated signed URLs — never public permanent URLs
@@ -339,7 +340,8 @@ X-Device-Type: web | mobile
 | `SupportRequest`              | Student support tickets                          |
 | `DeviceBinding`               | Web/mobile device registrations (+ optional push token) |
 | `Notification`                | In-app notification inbox per student                   |
-| `VideoDownload`               | Mobile download authorization records                   |
+| `VideoDownload`               | Mobile video download authorization / revoke records    |
+| `PdfDownload`                 | Mobile PDF download authorization / revoke records      |
 
 Prisma client is generated to `src/generated/prisma`.
 

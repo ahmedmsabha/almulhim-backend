@@ -13,6 +13,7 @@ import type {
 } from '../../common/types/authenticated-request.type';
 import type {
   Lesson,
+  PdfDownload,
   User,
   VideoDownload,
 } from '../../generated/prisma/client';
@@ -31,6 +32,7 @@ import {
   verifyVideoStreamTicket,
 } from './stream-ticket';
 import {
+  toPdfDownloadSyncItemResponse,
   toPdfViewAuthorizeResponse,
   toVideoDownloadAuthorizeResponse,
   toVideoDownloadSyncItemResponse,
@@ -309,6 +311,15 @@ export class DownloadsService {
     }
 
     try {
+      // Mobile-only sync record — offline PDF library + revoke parity with videos.
+      const download =
+        device.deviceType === 'mobile'
+          ? await this.upsertActivePdfDownload(
+              user.id,
+              lessonPdfId,
+              device.deviceHash,
+            )
+          : null;
       const expiresInSeconds = this.configService.get(
         'SIGNED_URL_TTL_SECONDS',
         {
@@ -321,7 +332,7 @@ export class DownloadsService {
         expiresInSeconds,
       });
 
-      return toPdfViewAuthorizeResponse(url, expiresAt);
+      return toPdfViewAuthorizeResponse(url, expiresAt, download?.id ?? null);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -343,34 +354,72 @@ export class DownloadsService {
 
     try {
       const hasActiveSubscription = await this.hasActiveSubscription(user.id);
-      const downloads = await this.prismaService.videoDownload.findMany({
-        where: {
-          userId: user.id,
-          deviceHash: device.deviceHash,
-        },
-        include: {
-          lessonVideo: {
-            include: {
-              lesson: {
-                include: {
-                  chapter: {
-                    include: {
-                      unit: true,
+      const [downloads, pdfDownloads] = await Promise.all([
+        this.prismaService.videoDownload.findMany({
+          where: {
+            userId: user.id,
+            deviceHash: device.deviceHash,
+          },
+          include: {
+            lessonVideo: {
+              include: {
+                lesson: {
+                  include: {
+                    chapter: {
+                      include: {
+                        unit: true,
+                      },
                     },
                   },
                 },
               },
             },
           },
-        },
-        orderBy: [{ downloadedAt: 'desc' }, { createdAt: 'desc' }],
-      });
+          orderBy: [{ downloadedAt: 'desc' }, { createdAt: 'desc' }],
+        }),
+        this.prismaService.pdfDownload.findMany({
+          where: {
+            userId: user.id,
+            deviceHash: device.deviceHash,
+          },
+          include: {
+            lessonPdf: {
+              include: {
+                lesson: {
+                  include: {
+                    chapter: {
+                      include: {
+                        unit: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ downloadedAt: 'desc' }, { createdAt: 'desc' }],
+        }),
+      ]);
 
       return {
         downloads: downloads.map((download) =>
           toVideoDownloadSyncItemResponse(
             download,
-            this.isDownloadAccessValid(user, download, hasActiveSubscription),
+            this.isVideoDownloadAccessValid(
+              user,
+              download,
+              hasActiveSubscription,
+            ),
+          ),
+        ),
+        pdfDownloads: pdfDownloads.map((download) =>
+          toPdfDownloadSyncItemResponse(
+            download,
+            this.isPdfDownloadAccessValid(
+              user,
+              download,
+              hasActiveSubscription,
+            ),
           ),
         ),
       };
@@ -384,17 +433,27 @@ export class DownloadsService {
     userId: string,
     options: { deviceHash?: string } = {},
   ): Promise<void> {
+    const where = {
+      userId,
+      revokedAt: null,
+      ...(options.deviceHash ? { deviceHash: options.deviceHash } : {}),
+    } as const;
+
     try {
-      await this.prismaService.videoDownload.updateMany({
-        where: {
-          userId,
-          revokedAt: null,
-          ...(options.deviceHash ? { deviceHash: options.deviceHash } : {}),
-        },
-        data: {
-          revokedAt: new Date(),
-        },
-      });
+      await Promise.all([
+        this.prismaService.videoDownload.updateMany({
+          where,
+          data: {
+            revokedAt: new Date(),
+          },
+        }),
+        this.prismaService.pdfDownload.updateMany({
+          where,
+          data: {
+            revokedAt: new Date(),
+          },
+        }),
+      ]);
     } catch (error) {
       this.logger.error(`Failed to revoke downloads for user ${userId}`, error);
       throw error;
@@ -527,7 +586,38 @@ export class DownloadsService {
     });
   }
 
-  private isDownloadAccessValid(
+  private async upsertActivePdfDownload(
+    userId: string,
+    lessonPdfId: string,
+    deviceHash: string,
+  ): Promise<PdfDownload> {
+    const existingDownload = await this.prismaService.pdfDownload.findFirst({
+      where: {
+        userId,
+        lessonPdfId,
+        deviceHash,
+        revokedAt: null,
+      },
+      orderBy: { downloadedAt: 'desc' },
+    });
+
+    if (existingDownload) {
+      return this.prismaService.pdfDownload.update({
+        where: { id: existingDownload.id },
+        data: { downloadedAt: new Date() },
+      });
+    }
+
+    return this.prismaService.pdfDownload.create({
+      data: {
+        userId,
+        lessonPdfId,
+        deviceHash,
+      },
+    });
+  }
+
+  private isVideoDownloadAccessValid(
     user: User,
     download: VideoDownload & {
       lessonVideo: {
@@ -549,6 +639,44 @@ export class DownloadsService {
     }
 
     const lesson = download.lessonVideo.lesson;
+    const chapter = lesson.chapter;
+    const unit = chapter.unit;
+
+    if (!lesson.isPublished || !chapter.isPublished || !unit.isPublished) {
+      return false;
+    }
+
+    const regionMatches = unit.region === 'both' || unit.region === user.region;
+
+    if (!regionMatches) {
+      return false;
+    }
+
+    return !computeIsLocked(lesson.accessLevel, hasActiveSubscription);
+  }
+
+  private isPdfDownloadAccessValid(
+    user: User,
+    download: PdfDownload & {
+      lessonPdf: {
+        lesson: Lesson & {
+          chapter: {
+            isPublished: boolean;
+            unit: {
+              isPublished: boolean;
+              region: User['region'] | 'both';
+            };
+          };
+        };
+      };
+    },
+    hasActiveSubscription: boolean,
+  ): boolean {
+    if (download.revokedAt !== null) {
+      return false;
+    }
+
+    const lesson = download.lessonPdf.lesson;
     const chapter = lesson.chapter;
     const unit = chapter.unit;
 
