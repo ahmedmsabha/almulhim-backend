@@ -12,6 +12,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ContentModule } from './modules/content/content.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { SupportModule } from './modules/support/support.module';
+import { ContactModule } from './modules/contact/contact.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { DownloadsModule } from './modules/downloads/downloads.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -34,6 +35,7 @@ import { UsersModule } from './modules/users/users.module';
     ContentModule,
     AnnouncementsModule,
     SupportModule,
+    ContactModule,
     DevicesModule,
     DownloadsModule,
     NotificationsModule,

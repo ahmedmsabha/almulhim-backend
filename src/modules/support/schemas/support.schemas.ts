@@ -17,6 +17,14 @@ export type ReplySupportRequestInput = z.infer<
   typeof replySupportRequestSchema
 >;
 
+export const followUpSupportRequestSchema = z.object({
+  message: z.string().trim().min(1).max(5000),
+});
+
+export type FollowUpSupportRequestInput = z.infer<
+  typeof followUpSupportRequestSchema
+>;
+
 export const listSupportRequestsQuerySchema = z.object({
   status: z.enum(['open', 'reviewed', 'closed']).optional(),
   q: z.string().trim().min(1).max(200).optional(),

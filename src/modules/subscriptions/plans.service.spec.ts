@@ -36,13 +36,23 @@ describe('PlansService', () => {
   });
 
   describe('listPublicPlans', () => {
-    it('returns active plans with name and price only', async () => {
+    it('returns active plans with marketing fields', async () => {
       jest
         .spyOn(prismaService.subscriptionPlan, 'findMany')
         .mockResolvedValue([plan]);
 
       await expect(plansService.listPublicPlans()).resolves.toEqual({
-        plans: [{ name: 'Monthly', priceAmount: 9900, currency: 'ILS' }],
+        plans: [
+          {
+            id: plan.id,
+            name: 'Monthly',
+            description: plan.description,
+            priceAmount: 9900,
+            currency: 'ILS',
+            durationDays: 30,
+            sortOrder: 0,
+          },
+        ],
       });
 
       expect(prismaService.subscriptionPlan.findMany).toHaveBeenCalledWith({

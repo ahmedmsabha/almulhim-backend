@@ -48,11 +48,31 @@ describe('PlansController', () => {
 
   it('delegates listPublicPlans to the service', async () => {
     plansService.listPublicPlans.mockResolvedValue({
-      plans: [{ name: 'Monthly', priceAmount: 9900, currency: 'ILS' }],
+      plans: [
+        {
+          id: adminPlan.id,
+          name: 'Monthly',
+          description: adminPlan.description,
+          priceAmount: 9900,
+          currency: 'ILS',
+          durationDays: 30,
+          sortOrder: 0,
+        },
+      ],
     });
 
     await expect(plansController.listPublicPlans()).resolves.toEqual({
-      plans: [{ name: 'Monthly', priceAmount: 9900, currency: 'ILS' }],
+      plans: [
+        {
+          id: adminPlan.id,
+          name: 'Monthly',
+          description: adminPlan.description,
+          priceAmount: 9900,
+          currency: 'ILS',
+          durationDays: 30,
+          sortOrder: 0,
+        },
+      ],
     });
   });
 

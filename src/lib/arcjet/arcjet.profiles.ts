@@ -9,10 +9,20 @@ export type ArcjetProfile =
   | 'device-bind'
   | 'upload-url'
   | 'admin-mutation'
-  | 'content-search';
+  | 'content-search'
+  | 'contact-public';
 
 const ARCJET_RULE_MODE = 'DRY_RUN' as const;
 const USER_CHARACTERISTICS = ['userId'] as const;
+const IP_CHARACTERISTICS = ['ip.src'] as const;
+
+const ipRateLimit = (max: number, interval: string | number) =>
+  slidingWindow({
+    mode: ARCJET_RULE_MODE,
+    characteristics: IP_CHARACTERISTICS,
+    max,
+    interval,
+  });
 
 const scraperBotRule = detectBot({
   mode: ARCJET_RULE_MODE,
@@ -67,6 +77,10 @@ export const ARCJET_PROFILE_RULES: Record<ArcjetProfile, ArcjetProfileRuleSet> =
     // Frequent student/admin search (debounced clients); AI-cost aware — 30/min per user.
     'content-search': {
       rateLimit: userRateLimit(30, '1m'),
+    },
+    'contact-public': {
+      rateLimit: ipRateLimit(5, '1h'),
+      botDetection: scraperBotRule,
     },
   };
 

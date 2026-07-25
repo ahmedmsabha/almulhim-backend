@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
@@ -46,5 +47,26 @@ export class SupportController {
     @CurrentUser() user: User,
   ): Promise<SupportRequestListResponse> {
     return this.supportService.listMine(user);
+  }
+
+  @ArcjetProtect('support-create')
+  @Post(':id/follow-up')
+  async followUp(
+    @CurrentUser() user: User,
+    @Param('id') requestId: string,
+    @Body() body: unknown,
+  ): Promise<SupportRequestResponse> {
+    try {
+      return await this.supportService.followUp(user, requestId, body);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException({
+          message: 'Validation failed',
+          errors: error.flatten(),
+        });
+      }
+
+      throw error;
+    }
   }
 }

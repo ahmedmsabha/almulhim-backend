@@ -1,9 +1,13 @@
 import type { SubscriptionPlan } from '../../../generated/prisma/client';
 
 export type PublicPlanResponse = {
+  id: string;
   name: string;
+  description: string | null;
   priceAmount: number;
   currency: string;
+  durationDays: number;
+  sortOrder: number;
 };
 
 export type PublicPlanListResponse = {
@@ -37,9 +41,13 @@ export type AdminPlanListResponse = {
 export const toPublicPlanResponse = (
   plan: SubscriptionPlan,
 ): PublicPlanResponse => ({
+  id: plan.id,
   name: plan.name,
+  description: plan.description,
   priceAmount: plan.priceAmount,
   currency: plan.currency,
+  durationDays: plan.durationDays,
+  sortOrder: plan.sortOrder,
 });
 
 export const toPlanResponse = (plan: SubscriptionPlan): PlanResponse => ({
