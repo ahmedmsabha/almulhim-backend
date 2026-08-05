@@ -7,6 +7,7 @@ import {
 import type { User } from '../../generated/prisma/client';
 import { AiProviderService } from '../../lib/ai';
 import { PrismaService } from '../../lib/database/prisma.service';
+import { R2StorageService } from '../../lib/storage';
 import {
   searchContentSchema,
   type SearchContentInput,
@@ -24,6 +25,7 @@ import {
   type UnitListResponse,
 } from './types/content.response';
 import { buildUnitVisibilityWhere } from './utils/content-access.utils';
+import { createLessonCoverUrl } from './utils/lesson-cover-url';
 
 const PUBLISHED_CHAPTER_WHERE = { isPublished: true } as const;
 
@@ -56,6 +58,7 @@ export class ContentService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly aiProviderService: AiProviderService,
+    private readonly r2StorageService: R2StorageService,
   ) {}
 
   async getTree(user: User): Promise<ContentTreeResponse> {
@@ -80,15 +83,28 @@ export class ContentService {
       });
 
       return {
-        units: units.map((unit) => ({
-          ...toUnitSummaryResponse(unit),
-          chapters: unit.chapters.map((chapter) => ({
-            ...toChapterSummaryResponse(chapter),
-            lessons: chapter.lessons.map((lesson) =>
-              toLessonSummaryResponse(lesson, hasActiveSubscription),
+        units: await Promise.all(
+          units.map(async (unit) => ({
+            ...toUnitSummaryResponse(unit),
+            chapters: await Promise.all(
+              unit.chapters.map(async (chapter) => ({
+                ...toChapterSummaryResponse(chapter),
+                lessons: await Promise.all(
+                  chapter.lessons.map(async (lesson) =>
+                    toLessonSummaryResponse(
+                      lesson,
+                      hasActiveSubscription,
+                      await createLessonCoverUrl(
+                        this.r2StorageService,
+                        lesson.coverStorageKey,
+                      ),
+                    ),
+                  ),
+                ),
+              })),
             ),
           })),
-        })),
+        ),
       };
     } catch (error) {
       this.logger.error(
@@ -179,8 +195,17 @@ export class ContentService {
       return {
         ...toChapterSummaryResponse(chapter),
         unitId: chapter.unitId,
-        lessons: chapter.lessons.map((lesson) =>
-          toLessonSummaryResponse(lesson, hasActiveSubscription),
+        lessons: await Promise.all(
+          chapter.lessons.map(async (lesson) =>
+            toLessonSummaryResponse(
+              lesson,
+              hasActiveSubscription,
+              await createLessonCoverUrl(
+                this.r2StorageService,
+                lesson.coverStorageKey,
+              ),
+            ),
+          ),
         ),
       };
     } catch (error) {
@@ -223,7 +248,12 @@ export class ContentService {
         throw new NotFoundException('Lesson not found');
       }
 
-      return toLessonDetailResponse(lesson, hasActiveSubscription);
+      const coverUrl = await createLessonCoverUrl(
+        this.r2StorageService,
+        lesson.coverStorageKey,
+      );
+
+      return toLessonDetailResponse(lesson, hasActiveSubscription, coverUrl);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

@@ -37,6 +37,7 @@ describe('PublicContentService', () => {
     sortOrder: 0,
     accessLevel: 'preview' as const,
     isPublished: true,
+    coverStorageKey: null as string | null,
     publishedAt: new Date('2026-07-01T08:00:00.000Z'),
     createdAt: new Date('2026-07-01T08:00:00.000Z'),
     updatedAt: new Date('2026-07-01T08:00:00.000Z'),
@@ -97,6 +98,7 @@ describe('PublicContentService', () => {
             videoCount: 1,
             totalDurationSeconds: 120,
             primaryVideoId: previewLesson.videos[0].id,
+            coverUrl: null,
           },
         ],
       });
@@ -131,6 +133,7 @@ describe('PublicContentService', () => {
                   title: 'Preview lesson',
                   sortOrder: 0,
                   accessLevel: 'preview',
+                  coverStorageKey: null,
                   _count: { videos: 1, pdfs: 0 },
                 },
                 {
@@ -138,6 +141,7 @@ describe('PublicContentService', () => {
                   title: 'Locked lesson',
                   sortOrder: 1,
                   accessLevel: 'subscriber_only',
+                  coverStorageKey: null,
                   _count: { videos: 2, pdfs: 1 },
                 },
               ],
@@ -153,6 +157,7 @@ describe('PublicContentService', () => {
             title: 'وحدة التأسيس',
             description: 'Foundation unit',
             sortOrder: 0,
+            coverUrl: null,
             chapters: [
               {
                 id: '550e8400-e29b-41d4-a716-446655440021',
@@ -167,6 +172,7 @@ describe('PublicContentService', () => {
                     isLocked: false,
                     videoCount: 1,
                     pdfCount: 0,
+                    coverUrl: null,
                   },
                   {
                     id: '550e8400-e29b-41d4-a716-446655440102',
@@ -176,6 +182,7 @@ describe('PublicContentService', () => {
                     isLocked: true,
                     videoCount: 2,
                     pdfCount: 1,
+                    coverUrl: null,
                   },
                 ],
               },

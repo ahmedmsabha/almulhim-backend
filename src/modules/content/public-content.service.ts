@@ -13,6 +13,7 @@ import type {
   PublicPreviewLessonListResponse,
   PublicPreviewLessonSummary,
 } from './types/public-preview.response';
+import { createLessonCoverUrl } from './utils/lesson-cover-url';
 
 const MEDIA_ORDER = [
   { sortOrder: 'asc' as const },
@@ -74,14 +75,20 @@ export class PublicContentService {
       });
 
       return {
-        lessons: lessons.map((lesson) =>
-          this.toSummary({
-            id: lesson.id,
-            title: lesson.title,
-            unitTitle: lesson.chapter.unit.title,
-            chapterTitle: lesson.chapter.title,
-            videos: lesson.videos,
-          }),
+        lessons: await Promise.all(
+          lessons.map(async (lesson) =>
+            this.toSummary({
+              id: lesson.id,
+              title: lesson.title,
+              unitTitle: lesson.chapter.unit.title,
+              chapterTitle: lesson.chapter.title,
+              videos: lesson.videos,
+              coverUrl: await createLessonCoverUrl(
+                this.r2StorageService,
+                lesson.coverStorageKey,
+              ),
+            }),
+          ),
         ),
       };
     } catch (error) {
@@ -118,30 +125,51 @@ export class PublicContentService {
       });
 
       return {
-        units: units.map((unit) => ({
-          id: unit.id,
-          title: unit.title,
-          description: unit.description,
-          sortOrder: unit.sortOrder,
-          chapters: unit.chapters.map((chapter) => ({
-            id: chapter.id,
-            title: chapter.title,
-            sortOrder: chapter.sortOrder,
-            lessons: chapter.lessons.map((lesson): PublicCatalogLesson => {
-              const isLocked = lesson.accessLevel !== 'preview';
+        units: await Promise.all(
+          units.map(async (unit) => {
+            const chapters = await Promise.all(
+              unit.chapters.map(async (chapter) => ({
+                id: chapter.id,
+                title: chapter.title,
+                sortOrder: chapter.sortOrder,
+                lessons: await Promise.all(
+                  chapter.lessons.map(async (lesson): Promise<PublicCatalogLesson> => {
+                    const isLocked = lesson.accessLevel !== 'preview';
+                    const coverUrl = await createLessonCoverUrl(
+                      this.r2StorageService,
+                      lesson.coverStorageKey,
+                    );
 
-              return {
-                id: lesson.id,
-                title: lesson.title,
-                sortOrder: lesson.sortOrder,
-                accessLevel: lesson.accessLevel,
-                isLocked,
-                videoCount: lesson._count.videos,
-                pdfCount: lesson._count.pdfs,
-              };
-            }),
-          })),
-        })),
+                    return {
+                      id: lesson.id,
+                      title: lesson.title,
+                      sortOrder: lesson.sortOrder,
+                      accessLevel: lesson.accessLevel,
+                      isLocked,
+                      videoCount: lesson._count.videos,
+                      pdfCount: lesson._count.pdfs,
+                      coverUrl,
+                    };
+                  }),
+                ),
+              })),
+            );
+
+            const coverUrl =
+              chapters
+                .flatMap((chapter) => chapter.lessons)
+                .find((lesson) => lesson.coverUrl)?.coverUrl ?? null;
+
+            return {
+              id: unit.id,
+              title: unit.title,
+              description: unit.description,
+              sortOrder: unit.sortOrder,
+              coverUrl,
+              chapters,
+            };
+          }),
+        ),
       };
     } catch (error) {
       this.logger.error('Failed to list public content catalog', error);
@@ -187,6 +215,10 @@ export class PublicContentService {
         unitTitle: lesson.chapter.unit.title,
         chapterTitle: lesson.chapter.title,
         videos: lesson.videos,
+        coverUrl: await createLessonCoverUrl(
+          this.r2StorageService,
+          lesson.coverStorageKey,
+        ),
       });
 
       const primaryVideo = lesson.videos[0] ?? null;
@@ -244,6 +276,7 @@ export class PublicContentService {
       id: string;
       durationSeconds: number | null;
     }>;
+    coverUrl: string | null;
   }): PublicPreviewLessonSummary {
     const durations = input.videos
       .map((video) => video.durationSeconds)
@@ -261,6 +294,7 @@ export class PublicContentService {
           ? durations.reduce((sum, value) => sum + value, 0)
           : null,
       primaryVideoId: input.videos[0]?.id ?? null,
+      coverUrl: input.coverUrl,
     };
   }
 

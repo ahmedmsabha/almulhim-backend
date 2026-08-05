@@ -94,6 +94,7 @@ describe('ContentService', () => {
     title: 'Preview Lesson',
     sortOrder: 0,
     accessLevel: 'preview' as const,
+    coverStorageKey: null as string | null,
     isPublished: true,
     publishedAt: new Date('2026-07-01T08:00:00.000Z'),
     createdAt: new Date('2026-07-01T08:00:00.000Z'),
@@ -106,6 +107,7 @@ describe('ContentService', () => {
     title: 'Subscriber Lesson',
     sortOrder: 1,
     accessLevel: 'subscriber_only' as const,
+    coverStorageKey: null as string | null,
     isPublished: true,
     publishedAt: new Date('2026-07-01T08:00:00.000Z'),
     createdAt: new Date('2026-07-01T08:00:00.000Z'),
@@ -142,6 +144,9 @@ describe('ContentService', () => {
     contentService = new ContentService(
       prismaService,
       aiProviderService as unknown as AiProviderService,
+      {
+        createSignedGetUrl: jest.fn().mockResolvedValue('https://cdn.example/cover'),
+      } as never,
     );
     jest.clearAllMocks();
     aiProviderService.isContentSearchAiEnabled.mockReturnValue(true);
@@ -215,6 +220,7 @@ describe('ContentService', () => {
           sortOrder: 0,
           accessLevel: 'preview',
           isLocked: false,
+          coverUrl: null,
         },
         {
           id: subscriberLesson.id,
@@ -222,6 +228,7 @@ describe('ContentService', () => {
           sortOrder: 1,
           accessLevel: 'subscriber_only',
           isLocked: true,
+          coverUrl: null,
         },
       ]);
     });

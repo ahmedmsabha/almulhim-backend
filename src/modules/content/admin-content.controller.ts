@@ -168,6 +168,28 @@ export class AdminContentController {
   }
 
   @ArcjetProtect('upload-url')
+  @Post('lessons/:lessonId/cover/upload-url')
+  async createCoverUploadUrl(
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
+    @Body() body: unknown,
+  ): Promise<MediaUploadUrlResponse> {
+    return this.handleWrite(() =>
+      this.adminContentService.createCoverUploadUrl(lessonId, body),
+    );
+  }
+
+  @ArcjetProtect('admin-mutation')
+  @Patch('lessons/:lessonId/cover')
+  async attachCover(
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
+    @Body() body: unknown,
+  ): Promise<AdminLessonDetailResponse> {
+    return this.handleWrite(() =>
+      this.adminContentService.attachCover(lessonId, body),
+    );
+  }
+
+  @ArcjetProtect('upload-url')
   @Post('lessons/:lessonId/videos/upload-url')
   async createVideoUploadUrl(
     @Param('lessonId', ParseUUIDPipe) lessonId: string,

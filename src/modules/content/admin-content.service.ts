@@ -11,15 +11,23 @@ import { PrismaService } from '../../lib/database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
   CONTENT_UPLOAD_EXPIRES_SECONDS,
+  COVER_CONTENT_TYPE_EXTENSION,
+  COVER_KEY_PREFIX,
   PDF_CONTENT_TYPE_EXTENSION,
   PDF_KEY_PREFIX,
   VIDEO_CONTENT_TYPE_EXTENSION,
   VIDEO_KEY_PREFIX,
+  buildCoverStorageKeyPattern,
   buildPdfStorageKeyPattern,
   buildVideoStorageKeyPattern,
+  type AllowedCoverContentType,
   type AllowedPdfContentType,
   type AllowedVideoContentType,
 } from './constants/content-upload.constants';
+import {
+  attachCoverSchema,
+  type AttachCoverInput,
+} from './schemas/attach-cover.schema';
 import {
   attachPdfSchema,
   type AttachPdfInput,
@@ -32,6 +40,10 @@ import {
   createChapterSchema,
   type CreateChapterInput,
 } from './schemas/create-chapter.schema';
+import {
+  createCoverUploadUrlSchema,
+  type CreateCoverUploadUrlInput,
+} from './schemas/create-cover-upload-url.schema';
 import {
   createLessonSchema,
   type CreateLessonInput,
@@ -90,6 +102,10 @@ import {
   validatePdfObjectMetadata,
   validateVideoObjectMetadata,
 } from './utils/lesson-media-object.validation';
+import {
+  lessonCoverValidationErrorMessage,
+  validateLessonCoverMetadata,
+} from './utils/lesson-cover.validation';
 
 const CHAPTER_ORDER = [
   { sortOrder: 'asc' as const },
@@ -576,6 +592,61 @@ export class AdminContentService {
     }
   }
 
+  async createCoverUploadUrl(
+    lessonId: string,
+    input: unknown,
+  ): Promise<MediaUploadUrlResponse> {
+    const validatedInput = this.parseCoverUploadUrlInput(input);
+    await this.assertLessonExists(lessonId);
+
+    const storageKey = this.buildCoverStorageKey(
+      lessonId,
+      validatedInput.contentType,
+    );
+
+    try {
+      const uploadUrl = await this.r2StorageService.createSignedPutUrl({
+        key: storageKey,
+        contentType: validatedInput.contentType,
+        expiresInSeconds: CONTENT_UPLOAD_EXPIRES_SECONDS,
+      });
+
+      return {
+        uploadUrl,
+        storageKey,
+        expiresInSeconds: CONTENT_UPLOAD_EXPIRES_SECONDS,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to create cover upload URL for lesson ${lessonId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async attachCover(
+    lessonId: string,
+    input: unknown,
+  ): Promise<AdminLessonDetailResponse> {
+    const validatedInput = this.parseAttachCoverInput(input);
+    await this.assertLessonExists(lessonId);
+    this.assertCoverStorageKey(lessonId, validatedInput.storageKey);
+    await this.assertValidCoverObject(validatedInput.storageKey);
+
+    try {
+      await this.prismaService.lesson.update({
+        where: { id: lessonId },
+        data: { coverStorageKey: validatedInput.storageKey },
+      });
+
+      return this.getLesson(lessonId);
+    } catch (error) {
+      this.logger.error(`Failed to attach cover to lesson ${lessonId}`, error);
+      throw error;
+    }
+  }
+
   async createVideoUploadUrl(
     lessonId: string,
     input: unknown,
@@ -893,6 +964,24 @@ export class AdminContentService {
     }
   }
 
+  private parseCoverUploadUrlInput(input: unknown): CreateCoverUploadUrlInput {
+    try {
+      return createCoverUploadUrlSchema.parse(input);
+    } catch (error) {
+      this.logger.error('Failed to validate cover upload URL payload', error);
+      throw error;
+    }
+  }
+
+  private parseAttachCoverInput(input: unknown): AttachCoverInput {
+    try {
+      return attachCoverSchema.parse(input);
+    } catch (error) {
+      this.logger.error('Failed to validate attach cover payload', error);
+      throw error;
+    }
+  }
+
   private parsePdfUploadUrlInput(input: unknown): CreatePdfUploadUrlInput {
     try {
       return createPdfUploadUrlSchema.parse(input);
@@ -946,6 +1035,14 @@ export class AdminContentService {
     return `${VIDEO_KEY_PREFIX}/${lessonId}/${randomUUID()}.${extension}`;
   }
 
+  private buildCoverStorageKey(
+    lessonId: string,
+    contentType: AllowedCoverContentType,
+  ): string {
+    const extension = COVER_CONTENT_TYPE_EXTENSION[contentType];
+    return `${COVER_KEY_PREFIX}/${lessonId}/${randomUUID()}.${extension}`;
+  }
+
   private buildPdfStorageKey(
     lessonId: string,
     contentType: AllowedPdfContentType,
@@ -959,6 +1056,14 @@ export class AdminContentService {
 
     if (!keyPattern.test(storageKey)) {
       throw new BadRequestException('Invalid video storage key');
+    }
+  }
+
+  private assertCoverStorageKey(lessonId: string, storageKey: string): void {
+    const keyPattern = buildCoverStorageKeyPattern(lessonId);
+
+    if (!keyPattern.test(storageKey)) {
+      throw new BadRequestException('Invalid cover storage key');
     }
   }
 
@@ -987,6 +1092,29 @@ export class AdminContentService {
 
       this.logger.error(
         `Failed to validate video object for key ${storageKey}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  private async assertValidCoverObject(storageKey: string): Promise<void> {
+    try {
+      const metadata = await this.r2StorageService.headObject(storageKey);
+      const validation = validateLessonCoverMetadata(metadata);
+
+      if (!validation.valid) {
+        throw new BadRequestException(
+          lessonCoverValidationErrorMessage(validation.error),
+        );
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      this.logger.error(
+        `Failed to validate cover object for key ${storageKey}`,
         error,
       );
       throw error;

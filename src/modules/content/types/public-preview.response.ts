@@ -9,6 +9,7 @@ export type PublicPreviewLessonSummary = {
   videoCount: number;
   totalDurationSeconds: number | null;
   primaryVideoId: string | null;
+  coverUrl: string | null;
 };
 
 export type PublicPreviewLessonListResponse = {

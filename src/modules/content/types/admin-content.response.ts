@@ -31,6 +31,7 @@ export type AdminLessonSummaryResponse = {
   title: string;
   sortOrder: number;
   accessLevel: LessonAccessLevel;
+  coverStorageKey: string | null;
   isPublished: boolean;
   publishedAt: string | null;
 };
@@ -122,6 +123,7 @@ export const toAdminLessonSummaryResponse = (
   title: lesson.title,
   sortOrder: lesson.sortOrder,
   accessLevel: lesson.accessLevel,
+  coverStorageKey: lesson.coverStorageKey,
   isPublished: lesson.isPublished,
   publishedAt: toIsoString(lesson.publishedAt),
 });

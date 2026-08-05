@@ -8,6 +8,7 @@ export type PublicCatalogLesson = {
   isLocked: boolean;
   videoCount: number;
   pdfCount: number;
+  coverUrl: string | null;
 };
 
 export type PublicCatalogChapter = {
@@ -22,6 +23,8 @@ export type PublicCatalogUnit = {
   title: string;
   description: string | null;
   sortOrder: number;
+  /** First available lesson cover in the unit, for catalog banners. */
+  coverUrl: string | null;
   chapters: PublicCatalogChapter[];
 };
 

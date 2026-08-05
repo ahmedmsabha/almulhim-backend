@@ -18,6 +18,7 @@ export type LessonSummaryResponse = {
   sortOrder: number;
   accessLevel: LessonAccessLevel;
   isLocked: boolean;
+  coverUrl: string | null;
 };
 
 export type LessonVideoResponse = {
@@ -104,6 +105,7 @@ export function toChapterSummaryResponse(
 export function toLessonSummaryResponse(
   lesson: Lesson,
   hasActiveSubscription: boolean,
+  coverUrl: string | null = null,
 ): LessonSummaryResponse {
   return {
     id: lesson.id,
@@ -111,6 +113,7 @@ export function toLessonSummaryResponse(
     sortOrder: lesson.sortOrder,
     accessLevel: lesson.accessLevel,
     isLocked: computeIsLocked(lesson.accessLevel, hasActiveSubscription),
+    coverUrl,
   };
 }
 
@@ -134,8 +137,13 @@ export function toLessonPdfResponse(pdf: LessonPdf): LessonPdfResponse {
 export function toLessonDetailResponse(
   lesson: LessonWithMedia,
   hasActiveSubscription: boolean,
+  coverUrl: string | null = null,
 ): LessonDetailResponse {
-  const summary = toLessonSummaryResponse(lesson, hasActiveSubscription);
+  const summary = toLessonSummaryResponse(
+    lesson,
+    hasActiveSubscription,
+    coverUrl,
+  );
 
   if (summary.isLocked) {
     return {
