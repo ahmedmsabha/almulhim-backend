@@ -12,6 +12,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ContentModule } from './modules/content/content.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { HomeVideosModule } from './modules/home-videos/home-videos.module';
+import { HomeGalleryModule } from './modules/home-gallery/home-gallery.module';
 import { SupportModule } from './modules/support/support.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { DevicesModule } from './modules/devices/devices.module';
@@ -36,6 +37,7 @@ import { UsersModule } from './modules/users/users.module';
     ContentModule,
     AnnouncementsModule,
     HomeVideosModule,
+    HomeGalleryModule,
     SupportModule,
     ContactModule,
     DevicesModule,

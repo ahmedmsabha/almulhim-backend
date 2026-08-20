@@ -45,8 +45,8 @@ export class DownloadsController {
   /**
    * Authenticated Range stream for student web. Requires Clerk + device binding.
    * Content-Type is octet-stream so the page plays via a blob URL, not a public MP4.
+   * Shield-only (no download-authorize window) so Range / full-file GETs are not starved.
    */
-  @ArcjetProtect('download-authorize')
   @RequiresDeviceBinding()
   @Get('videos/:lessonVideoId/web-stream')
   async streamVideoForWebGet(
@@ -65,7 +65,6 @@ export class DownloadsController {
     });
   }
 
-  @ArcjetProtect('download-authorize')
   @RequiresDeviceBinding()
   @Head('videos/:lessonVideoId/web-stream')
   async streamVideoForWebHead(
