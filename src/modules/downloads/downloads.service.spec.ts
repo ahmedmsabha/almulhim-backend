@@ -156,8 +156,9 @@ describe('DownloadsService', () => {
         lessonVideoId,
       );
 
-      expect(result.url).toBe('https://r2.example.com/signed-video');
-      expect(result.streamTicket).toEqual(expect.any(String));
+      expect(result.url).toBe('');
+      expect(result.streamTicket).toBe('');
+      expect(r2StorageService.createSignedGetUrl).not.toHaveBeenCalled();
     });
 
     it('returns a signed URL and creates a download record', async () => {
@@ -392,6 +393,17 @@ describe('DownloadsService', () => {
           revokedAt: expect.any(Date),
         },
       });
+    });
+  });
+
+  describe('resolveVideoStreamAccessFromRequest', () => {
+    it('rejects unauthenticated requests with no user or device', async () => {
+      await expect(
+        downloadsService.resolveVideoStreamAccessFromRequest(
+          {} as never,
+          lessonVideoId,
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

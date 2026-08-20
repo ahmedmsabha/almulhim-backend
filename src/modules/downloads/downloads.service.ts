@@ -253,19 +253,24 @@ export class DownloadsService {
         },
       );
       const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
-      const url = await this.r2StorageService.createSignedGetUrl({
-        key: lessonVideo.storageKey,
-        expiresInSeconds,
-      });
-      const streamTicket = createVideoStreamTicket(
-        {
-          userId: user.id,
-          lessonVideoId,
-          deviceHash: device.deviceHash,
-          exp: Math.floor(expiresAt.getTime() / 1000),
-        },
-        this.configService.get('DEVICE_HASH_PEPPER', { infer: true }),
-      );
+      const isWeb = device.deviceType === 'web';
+      const url = isWeb
+        ? ''
+        : await this.r2StorageService.createSignedGetUrl({
+            key: lessonVideo.storageKey,
+            expiresInSeconds,
+          });
+      const streamTicket = isWeb
+        ? ''
+        : createVideoStreamTicket(
+            {
+              userId: user.id,
+              lessonVideoId,
+              deviceHash: device.deviceHash,
+              exp: Math.floor(expiresAt.getTime() / 1000),
+            },
+            this.configService.get('DEVICE_HASH_PEPPER', { infer: true }),
+          );
 
       return toVideoDownloadAuthorizeResponse(
         download,

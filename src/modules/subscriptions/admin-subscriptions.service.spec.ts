@@ -23,22 +23,13 @@ jest.mock('../../lib/analytics/analytics.service', () => ({
   },
 }));
 
-jest.mock('./receipt-verification.service', () => ({
-  ReceiptVerificationService: class MockReceiptVerificationService {
-    assertTransactionReferenceAvailable = jest.fn();
-  },
-}));
-
 import {
   BadRequestException,
-  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
-import { ReceiptVerificationService } from './receipt-verification.service';
 import { AdminSubscriptionsService } from './admin-subscriptions.service';
 
 describe('AdminSubscriptionsService', () => {
@@ -46,7 +37,6 @@ describe('AdminSubscriptionsService', () => {
   let prismaService: PrismaService;
   let r2StorageService: R2StorageService;
   let analyticsService: AnalyticsService;
-  let receiptVerificationService: ReceiptVerificationService;
 
   const studentUser = {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -104,13 +94,11 @@ describe('AdminSubscriptionsService', () => {
     prismaService = new PrismaService();
     r2StorageService = new R2StorageService();
     analyticsService = new AnalyticsService({} as never);
-    receiptVerificationService = new ReceiptVerificationService();
 
     service = new AdminSubscriptionsService(
       prismaService,
       r2StorageService,
       analyticsService,
-      receiptVerificationService,
     );
 
     jest.clearAllMocks();
@@ -189,62 +177,6 @@ describe('AdminSubscriptionsService', () => {
       };
       expect(call.where.status.in).not.toContain('pending_review');
       expect(call.where.status.in).not.toContain('pending_approval');
-    });
-  });
-
-  describe('listAiLogs', () => {
-    it('includes failed verification payloads with error set', async () => {
-      const failedResult = {
-        version: 1 as const,
-        passed: false,
-        verifiedAt: '2026-07-01T10:05:00.000Z',
-        aiEnabled: true,
-        model: 'gemini-3.1-flash-lite',
-        error: 'Gemini timed out',
-        checks: {
-          recipientMatch: {
-            passed: false,
-            detected: null,
-            reason: 'Gemini timed out',
-          },
-          senderMatch: {
-            passed: false,
-            detected: null,
-            expected: 'Sender Name',
-            reason: 'Gemini timed out',
-          },
-          notDuplicate: {
-            passed: false,
-            detected: null,
-            transactionReference: null,
-            reason: 'Gemini timed out',
-          },
-        },
-        notes: null,
-      };
-      const logRow = {
-        ...pendingRow,
-        status: 'pending_review' as const,
-        verificationResult: failedResult,
-        verifiedAt: new Date('2026-07-01T10:05:00.000Z'),
-      };
-
-      jest
-        .spyOn(prismaService.subscription, 'findMany')
-        .mockResolvedValue([logRow] as never);
-
-      const result = await service.listAiLogs();
-
-      expect(result.logs).toHaveLength(1);
-      expect(result.logs[0].subscriptionId).toBe(logRow.id);
-      expect(result.logs[0].verificationResult).toEqual(failedResult);
-      expect(result.logs[0].verificationResult?.error).toBe('Gemini timed out');
-      expect(result.logs[0].verifiedAt).toBe('2026-07-01T10:05:00.000Z');
-      expect(prismaService.subscription.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orderBy: [{ verifiedAt: 'desc' }, { updatedAt: 'desc' }],
-        }),
-      );
     });
   });
 
@@ -449,39 +381,6 @@ describe('AdminSubscriptionsService', () => {
       );
 
       expect(result.status).toBe('active');
-    });
-
-    it('throws ConflictException when duplicate transaction reference is claimed during approval', async () => {
-      const reviewRow = {
-        ...pendingRow,
-        status: 'pending_review' as const,
-        verificationResult: {
-          checks: {
-            notDuplicate: {
-              transactionReference: 'TXN-123',
-            },
-          },
-        },
-      };
-
-      jest
-        .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(reviewRow);
-      jest.spyOn(prismaService.subscription, 'updateMany').mockRejectedValue(
-        new PrismaClientKnownRequestError('Unique constraint failed', {
-          code: 'P2002',
-          clientVersion: '7.8.0',
-          meta: { target: ['receipt_transaction_reference'] },
-        }),
-      );
-
-      await expect(
-        service.approveSubscription(pendingRow.id, adminClerkId),
-      ).rejects.toThrow(
-        new ConflictException(
-          'Receipt transaction reference is already in use',
-        ),
-      );
     });
 
     it('throws BadRequestException when subscription is not in a pending status', async () => {

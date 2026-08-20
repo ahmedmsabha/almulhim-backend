@@ -1,11 +1,9 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { ZodError } from 'zod';
 import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
@@ -16,19 +14,10 @@ import {
 } from './schemas/reject-subscription.schema';
 import {
   toAdminSubscriptionResponse,
-  toAdminStudentSummary,
   type AdminSubscriptionListResponse,
   type AdminSubscriptionResponse,
   type ReceiptUrlResponse,
 } from './types/admin-subscription.response';
-import {
-  toAiVerificationLogItem,
-  type AiVerificationLogListResponse,
-} from './types/ai-verification-log.response';
-import { ReceiptVerificationService } from './receipt-verification.service';
-import { extractTransactionReference } from './types/receipt-verification-result.types';
-import { normalizeTransactionReference } from './utils/transaction-reference.util';
-import { toSubscriptionPlanSummary } from './types/subscription.response';
 
 const PENDING_STATUSES = ['pending_review', 'pending_approval'] as const;
 const ARCHIVED_STATUSES = [
@@ -52,7 +41,6 @@ export class AdminSubscriptionsService {
     private readonly prismaService: PrismaService,
     private readonly r2StorageService: R2StorageService,
     private readonly analyticsService: AnalyticsService,
-    private readonly receiptVerificationService: ReceiptVerificationService,
   ) {}
 
   async listPending(): Promise<AdminSubscriptionListResponse> {
@@ -89,43 +77,6 @@ export class AdminSubscriptionsService {
       };
     } catch (error) {
       this.logger.error('Failed to list archived subscriptions', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Receipt AI verification runs for Admin "AI Logs".
-   * Includes rows where verification ran (`verifiedAt` set). The receipt pipeline
-   * always writes `verificationResult` together with `verifiedAt` (including
-   * failed AI payloads with `error` set).
-   * Sort: `verifiedAt` desc nulls last, then `updatedAt` desc.
-   */
-  async listAiLogs(): Promise<AiVerificationLogListResponse> {
-    try {
-      const subscriptions = await this.prismaService.subscription.findMany({
-        where: {
-          verifiedAt: { not: null },
-        },
-        include: { plan: true, user: true },
-        orderBy: [{ verifiedAt: 'desc' }, { updatedAt: 'desc' }],
-      });
-
-      return {
-        logs: subscriptions.map((subscription) =>
-          toAiVerificationLogItem({
-            subscriptionId: subscription.id,
-            student: toAdminStudentSummary(subscription.user),
-            plan: toSubscriptionPlanSummary(subscription.plan),
-            status: subscription.status,
-            verificationResult: subscription.verificationResult,
-            verifiedAt: subscription.verifiedAt,
-            createdAt: subscription.createdAt,
-            updatedAt: subscription.updatedAt,
-          }),
-        ),
-      };
-    } catch (error) {
-      this.logger.error('Failed to list AI verification logs', error);
       throw error;
     }
   }
@@ -174,24 +125,11 @@ export class AdminSubscriptionsService {
       );
     }
 
-    await this.receiptVerificationService.assertTransactionReferenceAvailable(
-      subscriptionId,
-      subscription.receiptTransactionReference,
-      subscription.verificationResult,
-    );
-
     const approvedAt = new Date();
     const expiresAt = new Date(
       approvedAt.getTime() +
         subscription.plan.durationDays * 24 * 60 * 60 * 1000,
     );
-    const normalizedReference = normalizeTransactionReference(
-      subscription.receiptTransactionReference ??
-        extractTransactionReference(subscription.verificationResult),
-    );
-    const shouldClaimReference =
-      normalizedReference !== null &&
-      subscription.receiptTransactionReference === null;
 
     try {
       const approvalResult = await this.prismaService.subscription.updateMany({
@@ -203,9 +141,6 @@ export class AdminSubscriptionsService {
           status: 'active',
           approvedAt,
           expiresAt,
-          ...(shouldClaimReference
-            ? { receiptTransactionReference: normalizedReference }
-            : {}),
         },
       });
 
@@ -232,32 +167,12 @@ export class AdminSubscriptionsService {
 
       return toAdminSubscriptionResponse(updated);
     } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002' &&
-        this.isReceiptTransactionReferenceConstraintViolation(error)
-      ) {
-        throw new ConflictException(
-          'Receipt transaction reference is already in use',
-        );
-      }
-
       this.logger.error(
         `Failed to approve subscription ${subscriptionId}`,
         error,
       );
       throw error;
     }
-  }
-
-  private isReceiptTransactionReferenceConstraintViolation(
-    error: PrismaClientKnownRequestError,
-  ): boolean {
-    const target = error.meta?.target;
-
-    return (
-      Array.isArray(target) && target.includes('receipt_transaction_reference')
-    );
   }
 
   async rejectSubscription(

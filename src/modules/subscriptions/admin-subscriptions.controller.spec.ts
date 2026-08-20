@@ -12,7 +12,6 @@ describe('AdminSubscriptionsController', () => {
       AdminSubscriptionsService,
       | 'listPending'
       | 'listArchived'
-      | 'listAiLogs'
       | 'getSubscriptionById'
       | 'getReceiptUrl'
       | 'approveSubscription'
@@ -25,7 +24,6 @@ describe('AdminSubscriptionsController', () => {
     service = {
       listPending: jest.fn(),
       listArchived: jest.fn(),
-      listAiLogs: jest.fn(),
       getSubscriptionById: jest.fn(),
       getReceiptUrl: jest.fn(),
       approveSubscription: jest.fn(),
@@ -44,14 +42,6 @@ describe('AdminSubscriptionsController', () => {
       subscriptions: [],
     });
     expect(service.listArchived).toHaveBeenCalled();
-    expect(service.getSubscriptionById).not.toHaveBeenCalled();
-  });
-
-  it('delegates listAiLogs to the service (static path, not UUID)', async () => {
-    service.listAiLogs.mockResolvedValue({ logs: [] });
-
-    await expect(controller.listAiLogs()).resolves.toEqual({ logs: [] });
-    expect(service.listAiLogs).toHaveBeenCalled();
     expect(service.getSubscriptionById).not.toHaveBeenCalled();
   });
 });

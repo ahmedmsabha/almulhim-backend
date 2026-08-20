@@ -32,18 +32,8 @@ export const appEnvSchema = z
     ARCJET_KEY: z.string().min(1).optional(),
 
     AI_PROVIDER: z.enum(['gemini']).default('gemini'),
-    RECEIPT_AI_ENABLED: booleanFromEnv.default(false),
     CONTENT_SEARCH_AI_ENABLED: booleanFromEnv.default(false),
     GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),
-    EXPECTED_RECIPIENT_NAMES: z
-      .string()
-      .default('')
-      .transform((value) =>
-        value
-          .split(',')
-          .map((name) => name.trim())
-          .filter((name) => name.length > 0),
-      ),
 
     CORS_ORIGINS: z
       .string()
@@ -107,26 +97,6 @@ export const appEnvSchema = z
         path: ['ARCJET_KEY'],
         message: 'ARCJET_KEY is required when ARCJET_ENABLED is true',
       });
-    }
-
-    if (env.RECEIPT_AI_ENABLED) {
-      if (!env.GOOGLE_GENERATIVE_AI_API_KEY) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['GOOGLE_GENERATIVE_AI_API_KEY'],
-          message:
-            'GOOGLE_GENERATIVE_AI_API_KEY is required when RECEIPT_AI_ENABLED is true',
-        });
-      }
-
-      if (env.EXPECTED_RECIPIENT_NAMES.length === 0) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['EXPECTED_RECIPIENT_NAMES'],
-          message:
-            'EXPECTED_RECIPIENT_NAMES is required when RECEIPT_AI_ENABLED is true',
-        });
-      }
     }
 
     if (env.CONTENT_SEARCH_AI_ENABLED && !env.GOOGLE_GENERATIVE_AI_API_KEY) {

@@ -5,11 +5,14 @@ import type {
 
 export type VideoDownloadAuthorizeResponse = {
   downloadId: string;
-  /** R2 signed GET URL (offline / download use). Prefer streamTicket for AVPlayer. */
+  /**
+   * R2 signed GET URL for native offline / AVPlayer fallback.
+   * Empty on web — the player must use the authenticated `/web-stream` route.
+   */
   url: string;
   /**
-   * HMAC ticket for `GET|HEAD /downloads/videos/:id/stream?ticket=…`.
-   * Needed because expo-video/AVPlayer often cannot attach Authorization headers.
+   * HMAC ticket for native `GET|HEAD /downloads/videos/:id/stream?ticket=…`.
+   * Empty on web.
    */
   streamTicket: string;
   expiresAt: string;

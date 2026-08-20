@@ -8,7 +8,11 @@ import {
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { ZodError } from 'zod';
-import type { User } from '../../generated/prisma/client';
+import type {
+  Subscription,
+  SubscriptionPlan,
+  User,
+} from '../../generated/prisma/client';
 import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
 import { PrismaService } from '../../lib/database/prisma.service';
@@ -28,7 +32,6 @@ import {
   submitSubscriptionSchema,
   type SubmitSubscriptionInput,
 } from './schemas/submit-subscription.schema';
-import { ReceiptVerificationService } from './receipt-verification.service';
 import {
   toSubscriptionResponse,
   type ReceiptUploadUrlResponse,
@@ -47,7 +50,6 @@ export class SubscriptionsService {
     private readonly prismaService: PrismaService,
     private readonly r2StorageService: R2StorageService,
     private readonly analyticsService: AnalyticsService,
-    private readonly receiptVerificationService: ReceiptVerificationService,
   ) {}
 
   async createReceiptUploadUrl(
@@ -112,8 +114,6 @@ export class SubscriptionsService {
         status: subscription.status,
       });
 
-      this.receiptVerificationService.scheduleVerification(subscription.id);
-
       return toSubscriptionResponse(subscription);
     } catch (error) {
       if (
@@ -136,7 +136,7 @@ export class SubscriptionsService {
       const subscription = await this.prismaService.subscription.findFirst({
         where: {
           userId: user.id,
-          status: { in: OPEN_SUBSCRIPTION_STATUSES },
+          status: { in: [...OPEN_SUBSCRIPTION_STATUSES, 'expired'] },
         },
         include: { plan: true },
         orderBy: { createdAt: 'desc' },
@@ -146,7 +146,8 @@ export class SubscriptionsService {
         throw new NotFoundException('No open subscription found');
       }
 
-      return toSubscriptionResponse(subscription);
+      const expired = await this.expireIfOverdue(subscription);
+      return toSubscriptionResponse(expired);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -329,5 +330,44 @@ export class SubscriptionsService {
       );
       throw error;
     }
+  }
+
+  private async expireIfOverdue(
+    subscription: Subscription & { plan: SubscriptionPlan },
+  ): Promise<Subscription & { plan: SubscriptionPlan }> {
+    const expirable =
+      subscription.status === 'active' || subscription.status === 'suspended';
+    if (
+      !expirable ||
+      !subscription.expiresAt ||
+      subscription.expiresAt > new Date()
+    ) {
+      return subscription;
+    }
+
+    const now = new Date();
+    const transitionResult = await this.prismaService.subscription.updateMany({
+      where: {
+        id: subscription.id,
+        status: { in: ['active', 'suspended'] },
+        expiresAt: { lte: now },
+      },
+      data: { status: 'expired' },
+    });
+
+    if (transitionResult.count !== 1) {
+      const latest = await this.prismaService.subscription.findUnique({
+        where: { id: subscription.id },
+        include: { plan: true },
+      });
+      return latest ?? { ...subscription, status: 'expired' };
+    }
+
+    this.analyticsService.captureSubscriptionExpired(subscription.userId, {
+      subscriptionId: subscription.id,
+      planId: subscription.planId,
+    });
+
+    return { ...subscription, status: 'expired' };
   }
 }

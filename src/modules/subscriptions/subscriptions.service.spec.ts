@@ -10,7 +10,9 @@ jest.mock('../../lib/database/prisma.service', () => ({
 
     subscription = {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
+      updateMany: jest.fn(),
     };
   },
 }));
@@ -22,15 +24,10 @@ jest.mock('../../lib/storage/r2-storage.service', () => ({
   },
 }));
 
-jest.mock('./receipt-verification.service', () => ({
-  ReceiptVerificationService: class MockReceiptVerificationService {
-    scheduleVerification = jest.fn();
-  },
-}));
-
 jest.mock('../../lib/analytics/analytics.service', () => ({
   AnalyticsService: class MockAnalyticsService {
     captureSubscriptionSubmitted = jest.fn();
+    captureSubscriptionExpired = jest.fn();
   },
 }));
 
@@ -43,7 +40,6 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
-import { ReceiptVerificationService } from './receipt-verification.service';
 import { RECEIPT_UPLOAD_EXPIRES_SECONDS } from './constants/receipt-upload.constants';
 import { SubscriptionsService } from './subscriptions.service';
 
@@ -52,7 +48,6 @@ describe('SubscriptionsService', () => {
   let prismaService: PrismaService;
   let r2StorageService: R2StorageService;
   let analyticsService: AnalyticsService;
-  let receiptVerificationService: ReceiptVerificationService;
 
   const studentUser = {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -135,12 +130,10 @@ describe('SubscriptionsService', () => {
     prismaService = new PrismaService({} as never);
     r2StorageService = new R2StorageService({} as never);
     analyticsService = new AnalyticsService({} as never);
-    receiptVerificationService = new ReceiptVerificationService();
     subscriptionsService = new SubscriptionsService(
       prismaService,
       r2StorageService,
       analyticsService,
-      receiptVerificationService,
     );
   });
 
@@ -246,9 +239,6 @@ describe('SubscriptionsService', () => {
         planId: activePlan.id,
         status: 'pending_review',
       });
-      expect(
-        receiptVerificationService.scheduleVerification,
-      ).toHaveBeenCalledWith(subscriptionRow.id);
     });
 
     it('throws ConflictException when user already has an open subscription', async () => {
@@ -451,6 +441,57 @@ describe('SubscriptionsService', () => {
         createdAt: subscriptionRow.createdAt.toISOString(),
         updatedAt: subscriptionRow.updatedAt.toISOString(),
       });
+
+      expect(prismaService.subscription.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: studentUser.id,
+          status: {
+            in: [
+              'pending_review',
+              'pending_approval',
+              'active',
+              'suspended',
+              'expired',
+            ],
+          },
+        },
+        include: { plan: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(prismaService.subscription.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('expires an overdue active subscription immediately', async () => {
+      const overdue = {
+        ...subscriptionRow,
+        status: 'active' as const,
+        expiresAt: new Date('2026-06-01T00:00:00.000Z'),
+      };
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(overdue);
+      jest
+        .spyOn(prismaService.subscription, 'updateMany')
+        .mockResolvedValue({ count: 1 });
+
+      const result = await subscriptionsService.getMySubscription(studentUser);
+
+      expect(result.status).toBe('expired');
+      expect(prismaService.subscription.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: overdue.id,
+          status: { in: ['active', 'suspended'] },
+          expiresAt: { lte: expect.any(Date) },
+        },
+        data: { status: 'expired' },
+      });
+      expect(analyticsService.captureSubscriptionExpired).toHaveBeenCalledWith(
+        studentUser.id,
+        {
+          subscriptionId: overdue.id,
+          planId: activePlan.id,
+        },
+      );
     });
 
     it('throws NotFoundException when no open subscription exists', async () => {

@@ -20,9 +20,8 @@ export type AdminStudentSummary = {
  * Admin subscription DTO used by GET /subscriptions/pending,
  * GET /subscriptions/archived, and GET /subscriptions/:id.
  *
- * `verificationResult` is the JSON blob written by `ReceiptVerificationService`
- * (`ReceiptVerificationResult` when `version === 1`, otherwise `null` before verify).
- * See that type and the Backend README for field names and an example payload.
+ * `verificationResult` / `verifiedAt` are leftover columns from the retired
+ * receipt-AI pipeline and are unused for new submissions.
  * This response never includes receipt binary or a permanent R2 URL.
  */
 export type AdminSubscriptionResponse = {
@@ -31,7 +30,7 @@ export type AdminSubscriptionResponse = {
   plan: SubscriptionPlanSummary;
   student: AdminStudentSummary;
   receiptSenderName: string | null;
-  /** Stored AI/pipeline result; shape is `ReceiptVerificationResult` when version === 1. */
+  /** Unused leftover from retired receipt AI. */
   verificationResult: unknown;
   verifiedAt: string | null;
   approvedAt: string | null;

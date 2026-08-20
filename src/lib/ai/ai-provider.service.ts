@@ -7,22 +7,8 @@ import {
   contentSearchResultSchema,
   type ContentSearchResult,
 } from './schemas/content-search.schema';
-import {
-  receiptAnalysisSchema,
-  type ReceiptAnalysis,
-} from './schemas/receipt-analysis.schema';
 
-/** Cost-efficient multimodal Flash-Lite — receipt OCR + content search. */
-export const RECEIPT_VERIFICATION_MODEL = 'gemini-3.1-flash-lite';
 export const CONTENT_SEARCH_MODEL = 'gemini-3.1-flash-lite';
-
-export type AnalyzeReceiptInput = {
-  imageBuffer: Buffer;
-  mediaType: string;
-  expectedRecipientNames: string[];
-  expectedSenderName: string;
-  knownTransactionReferences: string[];
-};
 
 export type SearchContentItemsInput = {
   query: string;
@@ -40,65 +26,8 @@ export class AiProviderService {
 
   constructor(private readonly configService: ConfigService<AppEnv, true>) {}
 
-  isReceiptAiEnabled(): boolean {
-    return this.configService.get('RECEIPT_AI_ENABLED', { infer: true });
-  }
-
   isContentSearchAiEnabled(): boolean {
     return this.configService.get('CONTENT_SEARCH_AI_ENABLED', { infer: true });
-  }
-
-  getExpectedRecipientNames(): string[] {
-    return this.configService.get('EXPECTED_RECIPIENT_NAMES', { infer: true });
-  }
-
-  async analyzeReceipt(input: AnalyzeReceiptInput): Promise<ReceiptAnalysis> {
-    if (!this.isReceiptAiEnabled()) {
-      throw new Error('Receipt AI is disabled');
-    }
-
-    const expectedRecipients = input.expectedRecipientNames.join(', ');
-    const knownReferences =
-      input.knownTransactionReferences.length > 0
-        ? input.knownTransactionReferences.join(', ')
-        : 'none';
-
-    try {
-      const result = await generateObject({
-        model: google(RECEIPT_VERIFICATION_MODEL),
-        schema: receiptAnalysisSchema,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: [
-                  'Analyze this payment receipt image for a student subscription request.',
-                  `Expected recipient names (payee): ${expectedRecipients}`,
-                  `Expected sender name entered by the student: ${input.expectedSenderName}`,
-                  `Known transaction references already used: ${knownReferences}`,
-                  'Set recipientMatch when the payee matches any expected recipient name, allowing minor spelling or formatting differences.',
-                  'Set senderMatch when the payer name matches the expected sender name, allowing minor spelling or formatting differences.',
-                  'Extract transactionReference when a stable transaction ID or reference number is visible.',
-                  'Set appearsDuplicate to true only when this receipt clearly reuses a payment already represented by a known transaction reference.',
-                ].join('\n'),
-              },
-              {
-                type: 'file',
-                mediaType: input.mediaType,
-                data: input.imageBuffer,
-              },
-            ],
-          },
-        ],
-      });
-
-      return result.object;
-    } catch (error) {
-      this.logger.error('Receipt AI analysis failed', error);
-      throw error;
-    }
   }
 
   async searchContentItems(

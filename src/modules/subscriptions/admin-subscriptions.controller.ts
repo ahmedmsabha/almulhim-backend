@@ -17,7 +17,6 @@ import type {
   AdminSubscriptionResponse,
   ReceiptUrlResponse,
 } from './types/admin-subscription.response';
-import type { AiVerificationLogListResponse } from './types/ai-verification-log.response';
 
 @Roles('admin')
 @Controller('subscriptions')
@@ -38,15 +37,6 @@ export class AdminSubscriptionsController {
   @Get('archived')
   async listArchived(): Promise<AdminSubscriptionListResponse> {
     return this.adminSubscriptionsService.listArchived();
-  }
-
-  /**
-   * Receipt AI verification runs (`verificationResult` / `verifiedAt`).
-   * Registered before `:id` so "ai-logs" is not parsed as UUID.
-   */
-  @Get('ai-logs')
-  async listAiLogs(): Promise<AiVerificationLogListResponse> {
-    return this.adminSubscriptionsService.listAiLogs();
   }
 
   @ArcjetProtect('admin-mutation')

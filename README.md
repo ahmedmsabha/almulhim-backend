@@ -200,7 +200,6 @@ Clients already loaded their authorized tree (`GET /content/tree` or `GET /conte
 | PATCH          | `/plans/:id`                              | Update or disable plan                                                                         |
 | GET            | `/subscriptions/pending`                  | Pending subscription queue                                                                     |
 | GET            | `/subscriptions/archived`                 | Archived decisions (`active` \| `rejected` \| `suspended` \| `expired`)                        |
-| GET            | `/subscriptions/ai-logs`                  | Receipt AI verification log rows                                                               |
 | GET            | `/subscriptions/:id`                      | Get one subscription (any status; same DTO as pending-list row)                                |
 | GET            | `/subscriptions/:id/receipt-url`          | Signed receipt view URL                                                                        |
 | PATCH          | `/subscriptions/:id/approve`              | Approve subscription                                                                           |
@@ -251,57 +250,7 @@ Clerk sync is fail-closed for deactivate/reactivate (Nest rolled back / left unc
 
 **Admin archived decisions** (`GET /subscriptions/archived`): same `AdminSubscriptionListResponse` as pending. Filter: `active` \| `rejected` \| `suspended` \| `expired` (excludes `pending_review` and `pending_approval`). Sort: `updatedAt` desc. Full list (no pagination in v1). Static path registered before `GET /subscriptions/:id`.
 
-**Admin AI logs** (`GET /subscriptions/ai-logs`): `{ logs: AiVerificationLogItem[] }` where each item has `subscriptionId`, `student` (`AdminStudentSummary`), `plan`, `status`, `verificationResult` (`ReceiptVerificationResult` v1 or `null`), `verifiedAt`, `createdAt`, `updatedAt`. Includes any subscription with `verifiedAt` set (failed AI with `error` included). Sort: `verifiedAt` desc, then `updatedAt` desc. Static path registered before `GET /subscriptions/:id`.
-
-**Admin subscription detail** (`GET /subscriptions/:id`): same DTO as a `GET /subscriptions/pending` row (`AdminSubscriptionResponse`) for any status (`pending_review`, `pending_approval`, `active`, `rejected`, `suspended`, `expired`, etc.). `404` if missing. Invalid UUID → Nest `ParseUUIDPipe` `400`. Does **not** return receipt binary or a permanent R2 URL — use `GET /subscriptions/:id/receipt-url` for signed viewing.
-
-**`verificationResult` JSON** (written by `ReceiptVerificationService` into `subscriptions.verification_result`; `null` until verification runs). Canonical TypeScript type: `ReceiptVerificationResult` in `src/modules/subscriptions/types/receipt-verification-result.types.ts`.
-
-| Field                   | Meaning                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `version`               | Always `1` for the current schema                                              |
-| `passed`                | Overall pass when recipient, sender, and not-duplicate checks all pass         |
-| `verifiedAt`            | ISO-8601 timestamp when verification ran                                       |
-| `aiEnabled`             | `false` when `RECEIPT_AI_ENABLED=false` (skip path); `true` when Gemini ran    |
-| `model`                 | e.g. `gemini-3.1-flash-lite` when AI ran; `null` when skipped                       |
-| `error`                 | Pipeline/Gemini failure message; `null` on success                             |
-| `checks.recipientMatch` | `{ passed, detected, reason }` — payee vs expected teacher names               |
-| `checks.senderMatch`    | `{ passed, detected, expected?, reason }` — payer vs student-entered sender    |
-| `checks.notDuplicate`   | `{ passed, detected, transactionReference, reason }` — txn id + duplicate flag |
-| `notes`                 | Gemini free-text notes, or skip-mode explanation                               |
-
-Example (passing AI run):
-
-```json
-{
-  "version": 1,
-  "passed": true,
-  "verifiedAt": "2026-07-01T10:00:00.000Z",
-  "aiEnabled": true,
-  "model": "gemini-3.1-flash-lite",
-  "error": null,
-  "checks": {
-    "recipientMatch": {
-      "passed": true,
-      "detected": "Teacher Name",
-      "reason": null
-    },
-    "senderMatch": {
-      "passed": true,
-      "detected": "Sender Name",
-      "expected": "Sender Name",
-      "reason": null
-    },
-    "notDuplicate": {
-      "passed": true,
-      "detected": "TX-123",
-      "transactionReference": "TX-123",
-      "reason": null
-    }
-  },
-  "notes": null
-}
-```
+**Admin subscription detail** (`GET /subscriptions/:id`): same DTO as a `GET /subscriptions/pending` row (`AdminSubscriptionResponse`) for any status (`pending_review`, `pending_approval`, `active`, `rejected`, `suspended`, `expired`, etc.). `404` if missing. Invalid UUID → Nest `ParseUUIDPipe` `400`. Does **not** return receipt binary or a permanent R2 URL — use `GET /subscriptions/:id/receipt-url` for signed viewing. Admin confirms receipts by viewing the image and approving or rejecting — there is no receipt AI step.
 
 **Device headers** (required on device-bound routes):
 
@@ -321,8 +270,8 @@ X-Device-Type: web | mobile
 - **Content access:** Preview lessons are free by region; subscriber-only lessons require an active non-expired subscription
 - **Devices:** One web + one mobile device per student; identifiers stored as hashes only
 - **Notifications:** In-app rows on lesson/announcement publish (region-targeted); Expo OS push via `expo-server-sdk` when `PUSH_NOTIFICATIONS_ENABLED=true` and mobile tokens are registered
-- **Downloads:** Mobile-only; short-lived signed URLs; revocable on admin device reset
-- **Receipts:** Admin-only access; AI verification with duplicate transaction reference enforcement
+- **Downloads:** Mobile-only offline files; student web plays lessons via an authenticated `/web-stream` blob (no public MP4 URL in the page)
+- **Receipts:** Admin-only access; admin views the uploaded image and approves or rejects
 - **Files:** All private media served via server-generated signed URLs — never public permanent URLs
 
 ---
@@ -352,7 +301,6 @@ Prisma client is generated to `src/generated/prisma`.
 | Scheduler                           | Interval         | Action                                                 |
 | ----------------------------------- | ---------------- | ------------------------------------------------------ |
 | `SubscriptionExpiryScheduler`       | Every hour       | Expire active/suspended subscriptions past `expiresAt` |
-| `ReceiptVerificationRetryScheduler` | Every 10 minutes | Retry failed AI receipt verifications                  |
 
 ---
 
@@ -416,7 +364,7 @@ Copy `.env.example` and configure. Key groups:
 | Auth     | `CLERK_*`, `CORS_ORIGINS`                         | `CORS_ORIGINS` and `CLERK_AUTHORIZED_PARTIES` required in production |
 | Storage  | `R2_*`                                            | Cloudflare R2 credentials and bucket                                 |
 | Security | `DEVICE_HASH_PEPPER`, `SIGNED_URL_TTL_SECONDS`    | Device hashing and signed URL TTL                                    |
-| Optional | `POSTHOG_*`, `ARCJET_*`, `RECEIPT_AI_*`, `CONTENT_SEARCH_AI_ENABLED`, `MAIL_*`, `PUSH_NOTIFICATIONS_ENABLED` | Feature-flagged via `*_ENABLED` vars |
+| Optional | `POSTHOG_*`, `ARCJET_*`, `CONTENT_SEARCH_AI_ENABLED`, `MAIL_*`, `PUSH_NOTIFICATIONS_ENABLED` | Feature-flagged via `*_ENABLED` vars |
 
 Full contract: [`context/env-contract.md`](context/env-contract.md)
 

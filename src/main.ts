@@ -15,6 +15,7 @@ async function bootstrap(): Promise<void> {
       app.enableCors({
         origin: corsOrigins,
         credentials: true,
+        exposedHeaders: ['Accept-Ranges', 'Content-Range', 'Content-Length'],
       });
     }
 

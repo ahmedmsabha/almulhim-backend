@@ -6,6 +6,9 @@ jest.mock('../../common/decorators/requires-device-binding.decorator', () => ({
   RequiresDeviceBinding: () => () => undefined,
 }));
 
+import { PassThrough } from 'node:stream';
+
+import { IS_PUBLIC_KEY } from '../../common/constants/auth-metadata';
 import { DownloadsController } from './downloads.controller';
 import { DownloadsService } from './downloads.service';
 
@@ -14,7 +17,10 @@ describe('DownloadsController', () => {
   let downloadsService: jest.Mocked<
     Pick<
       DownloadsService,
-      'authorizeVideoDownloadFromRequest' | 'listMyDownloadsFromRequest'
+      'authorizeVideoDownloadFromRequest'
+      | 'listMyDownloadsFromRequest'
+      | 'resolveVideoStreamAccessFromRequest'
+      | 'openVideoStream'
     >
   >;
 
@@ -42,6 +48,8 @@ describe('DownloadsController', () => {
     downloadsService = {
       authorizeVideoDownloadFromRequest: jest.fn(),
       listMyDownloadsFromRequest: jest.fn(),
+      resolveVideoStreamAccessFromRequest: jest.fn(),
+      openVideoStream: jest.fn(),
     };
     downloadsController = new DownloadsController(
       downloadsService as unknown as DownloadsService,
@@ -51,7 +59,8 @@ describe('DownloadsController', () => {
   it('delegates authorize requests to the service', async () => {
     downloadsService.authorizeVideoDownloadFromRequest.mockResolvedValue({
       downloadId: '550e8400-e29b-41d4-a716-446655440060',
-      url: 'https://r2.example.com/signed-video',
+      url: '',
+      streamTicket: '',
       expiresAt: '2026-07-01T10:15:00.000Z',
     });
 
@@ -83,5 +92,56 @@ describe('DownloadsController', () => {
     expect(downloadsService.listMyDownloadsFromRequest).toHaveBeenCalledWith(
       request,
     );
+  });
+
+  it('resolves web stream access from the authenticated request, not a ticket', async () => {
+    const body = new PassThrough();
+    body.end(Buffer.from([0]));
+    downloadsService.resolveVideoStreamAccessFromRequest.mockResolvedValue({
+      storageKey: 'videos/preview/video.mp4',
+      contentType: 'video/mp4',
+      contentLength: 1,
+    });
+    downloadsService.openVideoStream.mockResolvedValue({
+      statusCode: 200,
+      contentType: 'video/mp4',
+      contentLength: 1,
+      contentRange: undefined,
+      body,
+    });
+    const response = Object.assign(new PassThrough(), {
+      status: jest.fn().mockReturnThis(),
+      setHeader: jest.fn(),
+      headersSent: false,
+    });
+
+    await downloadsController.streamVideoForWebGet(
+      request as never,
+      response as never,
+      '550e8400-e29b-41d4-a716-446655440050',
+    );
+
+    expect(
+      downloadsService.resolveVideoStreamAccessFromRequest,
+    ).toHaveBeenCalledWith(request, '550e8400-e29b-41d4-a716-446655440050');
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'application/octet-stream',
+    );
+  });
+
+  it('does not expose the web stream as a public ticketed URL', () => {
+    expect(
+      Reflect.getMetadata(
+        IS_PUBLIC_KEY,
+        DownloadsController.prototype.streamVideoForWebGet,
+      ),
+    ).not.toBe(true);
+    expect(
+      Reflect.getMetadata(
+        IS_PUBLIC_KEY,
+        DownloadsController.prototype.streamVideoGet,
+      ),
+    ).toBe(true);
   });
 });

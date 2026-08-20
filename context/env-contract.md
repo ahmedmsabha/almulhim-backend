@@ -48,10 +48,8 @@ ARCJET_ENABLED=false    # default false — when true, ARCJET_KEY is required
 ARCJET_KEY=
 
 AI_PROVIDER=gemini      # default gemini — only provider in v1
-RECEIPT_AI_ENABLED=false # default false — when true, GOOGLE_GENERATIVE_AI_API_KEY + EXPECTED_RECIPIENT_NAMES required
-CONTENT_SEARCH_AI_ENABLED=false # default false — when true, GOOGLE_GENERATIVE_AI_API_KEY required (same Gemini key as receipts; separate flag so search can be enabled without receipt AI)
+CONTENT_SEARCH_AI_ENABLED=false # default false — when true, GOOGLE_GENERATIVE_AI_API_KEY required
 GOOGLE_GENERATIVE_AI_API_KEY=
-EXPECTED_RECIPIENT_NAMES=
 
 MAIL_ENABLED=false    # default false — when true, all mail vars below are required
 MAIL_FROM=

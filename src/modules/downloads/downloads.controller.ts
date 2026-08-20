@@ -17,7 +17,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequiresDeviceBinding } from '../../common/decorators/requires-device-binding.decorator';
 import { RequiresRegistration } from '../../common/decorators/requires-registration.decorator';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
-import { DownloadsService } from './downloads.service';
+import { DownloadsService, type VideoStreamAccess } from './downloads.service';
 import type {
   PdfViewAuthorizeResponse,
   VideoDownloadAuthorizeResponse,
@@ -40,6 +40,55 @@ export class DownloadsController {
       request,
       lessonVideoId,
     );
+  }
+
+  /**
+   * Authenticated Range stream for student web. Requires Clerk + device binding.
+   * Content-Type is octet-stream so the page plays via a blob URL, not a public MP4.
+   */
+  @ArcjetProtect('download-authorize')
+  @RequiresDeviceBinding()
+  @Get('videos/:lessonVideoId/web-stream')
+  async streamVideoForWebGet(
+    @Req() request: AuthenticatedRequest,
+    @Res() response: Response,
+    @Param('lessonVideoId', ParseUUIDPipe) lessonVideoId: string,
+    @Headers('range') rangeHeader?: string,
+  ): Promise<void> {
+    const access =
+      await this.downloadsService.resolveVideoStreamAccessFromRequest(
+        request,
+        lessonVideoId,
+      );
+    await this.pipeVideoStreamFromAccess(response, access, rangeHeader, {
+      contentType: 'application/octet-stream',
+    });
+  }
+
+  @ArcjetProtect('download-authorize')
+  @RequiresDeviceBinding()
+  @Head('videos/:lessonVideoId/web-stream')
+  async streamVideoForWebHead(
+    @Req() request: AuthenticatedRequest,
+    @Res() response: Response,
+    @Param('lessonVideoId', ParseUUIDPipe) lessonVideoId: string,
+  ): Promise<void> {
+    const access =
+      await this.downloadsService.resolveVideoStreamAccessFromRequest(
+        request,
+        lessonVideoId,
+      );
+    const meta = this.downloadsService.headVideoMetadata(access);
+
+    response.status(200);
+    response.setHeader('Accept-Ranges', 'bytes');
+    response.setHeader('Content-Type', 'application/octet-stream');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Cache-Control', 'no-store');
+    if (meta.contentLength != null) {
+      response.setHeader('Content-Length', String(meta.contentLength));
+    }
+    response.end();
   }
 
   /**
@@ -121,6 +170,17 @@ export class DownloadsController {
         ticket,
         lessonVideoId,
       );
+    await this.pipeVideoStreamFromAccess(response, access, rangeHeader, {
+      contentType: undefined,
+    });
+  }
+
+  private async pipeVideoStreamFromAccess(
+    response: Response,
+    access: VideoStreamAccess,
+    rangeHeader: string | undefined,
+    options: { contentType?: string },
+  ): Promise<void> {
     const stream = await this.downloadsService.openVideoStream(
       access,
       rangeHeader,
@@ -128,7 +188,12 @@ export class DownloadsController {
 
     response.status(stream.statusCode);
     response.setHeader('Accept-Ranges', 'bytes');
-    response.setHeader('Content-Type', stream.contentType || 'video/mp4');
+    response.setHeader(
+      'Content-Type',
+      options.contentType ?? stream.contentType ?? 'video/mp4',
+    );
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Cache-Control', 'no-store');
     if (stream.contentLength != null) {
       response.setHeader('Content-Length', String(stream.contentLength));
     }

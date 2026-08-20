@@ -77,38 +77,6 @@ describe('appEnvSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('requires Gemini config when RECEIPT_AI_ENABLED is true', () => {
-    const result = appEnvSchema.safeParse({
-      ...baseEnv,
-      RECEIPT_AI_ENABLED: 'true',
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const paths = result.error.issues.map((issue) => issue.path.join('.'));
-      expect(paths).toContain('GOOGLE_GENERATIVE_AI_API_KEY');
-      expect(paths).toContain('EXPECTED_RECIPIENT_NAMES');
-    }
-  });
-
-  it('accepts Gemini config when RECEIPT_AI_ENABLED is true', () => {
-    const result = appEnvSchema.safeParse({
-      ...baseEnv,
-      RECEIPT_AI_ENABLED: 'true',
-      GOOGLE_GENERATIVE_AI_API_KEY: 'google_api_key',
-      EXPECTED_RECIPIENT_NAMES: 'Teacher Name, Alt Name',
-    });
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.RECEIPT_AI_ENABLED).toBe(true);
-      expect(result.data.EXPECTED_RECIPIENT_NAMES).toEqual([
-        'Teacher Name',
-        'Alt Name',
-      ]);
-    }
-  });
-
   it('requires Gemini API key when CONTENT_SEARCH_AI_ENABLED is true', () => {
     const result = appEnvSchema.safeParse({
       ...baseEnv,
