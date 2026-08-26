@@ -34,10 +34,11 @@ jest.mock('../../lib/storage/r2-storage.service', () => ({
   R2StorageService: class MockR2StorageService {
     headObject = jest.fn();
     createSignedGetUrl = jest.fn();
+    getObjectStream = jest.fn();
   },
 }));
 
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
@@ -404,6 +405,49 @@ describe('DownloadsService', () => {
           lessonVideoId,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('openVideoStream', () => {
+    const access = {
+      storageKey: 'videos/preview/video.mp4',
+      contentType: 'video/mp4',
+      contentLength: 59_000_000,
+    };
+
+    it('returns a 206 stream when Range is honored', async () => {
+      const body = { destroy: jest.fn() };
+      jest.spyOn(r2StorageService, 'getObjectStream').mockResolvedValue({
+        statusCode: 206,
+        contentType: 'video/mp4',
+        contentLength: 524288,
+        contentRange: 'bytes 0-524287/59000000',
+        body: body as never,
+      });
+
+      await expect(
+        downloadsService.openVideoStream(access, 'bytes=0-524287'),
+      ).resolves.toMatchObject({
+        statusCode: 206,
+        contentRange: 'bytes 0-524287/59000000',
+      });
+      expect(body.destroy).not.toHaveBeenCalled();
+    });
+
+    it('does not pipe a full object when Range is ignored', async () => {
+      const body = { destroy: jest.fn() };
+      jest.spyOn(r2StorageService, 'getObjectStream').mockResolvedValue({
+        statusCode: 200,
+        contentType: 'video/mp4',
+        contentLength: 59_000_000,
+        contentRange: undefined,
+        body: body as never,
+      });
+
+      await expect(
+        downloadsService.openVideoStream(access, 'bytes=0-524287'),
+      ).rejects.toThrow(InternalServerErrorException);
+      expect(body.destroy).toHaveBeenCalled();
     });
   });
 });

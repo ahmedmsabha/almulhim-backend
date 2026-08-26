@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   UnauthorizedException,
@@ -208,6 +209,13 @@ export class DownloadsService {
 
     if (!stream) {
       throw new NotFoundException('Lesson video not found');
+    }
+
+    if (rangeHeader && stream.statusCode !== 206) {
+      stream.body.destroy();
+      throw new InternalServerErrorException(
+        'Storage did not honor HTTP Range',
+      );
     }
 
     return stream;

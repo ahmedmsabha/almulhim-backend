@@ -229,6 +229,14 @@ export class R2StorageService {
 
       const body = result.Body as import('stream').Readable;
 
+      if (rangeHeader && !result.ContentRange) {
+        body.destroy();
+        this.logger.error(
+          `Range request returned no Content-Range for key: ${key}`,
+        );
+        throw new Error('Object store ignored HTTP Range');
+      }
+
       return {
         body,
         contentType: result.ContentType ?? 'application/octet-stream',

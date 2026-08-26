@@ -9,6 +9,7 @@ jest.mock('../../common/decorators/requires-device-binding.decorator', () => ({
 import { PassThrough } from 'node:stream';
 
 import { IS_PUBLIC_KEY } from '../../common/constants/auth-metadata';
+import { ARCJET_PROTECT_KEY } from '../../common/constants/arcjet-metadata';
 import { DownloadsController } from './downloads.controller';
 import { DownloadsService } from './downloads.service';
 
@@ -128,6 +129,70 @@ describe('DownloadsController', () => {
       'Content-Type',
       'application/octet-stream',
     );
+  });
+
+  it('forwards Range and returns 206 for web-stream GET', async () => {
+    const body = new PassThrough();
+    body.end(Buffer.from([0, 1, 2]));
+    downloadsService.resolveVideoStreamAccessFromRequest.mockResolvedValue({
+      storageKey: 'videos/preview/video.mp4',
+      contentType: 'video/mp4',
+      contentLength: 59_000_000,
+    });
+    downloadsService.openVideoStream.mockResolvedValue({
+      statusCode: 206,
+      contentType: 'video/mp4',
+      contentLength: 524288,
+      contentRange: 'bytes 0-524287/59000000',
+      body,
+    });
+    const response = Object.assign(new PassThrough(), {
+      status: jest.fn().mockReturnThis(),
+      setHeader: jest.fn(),
+      headersSent: false,
+    });
+
+    await downloadsController.streamVideoForWebGet(
+      request as never,
+      response as never,
+      '550e8400-e29b-41d4-a716-446655440050',
+      'bytes=0-524287',
+    );
+
+    expect(downloadsService.openVideoStream).toHaveBeenCalledWith(
+      expect.objectContaining({ storageKey: 'videos/preview/video.mp4' }),
+      'bytes=0-524287',
+    );
+    expect(response.status).toHaveBeenCalledWith(206);
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Content-Range',
+      'bytes 0-524287/59000000',
+    );
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'application/octet-stream',
+    );
+  });
+
+  it('does not apply download-authorize Arcjet to web-stream GET or HEAD', () => {
+    expect(
+      Reflect.getMetadata(
+        ARCJET_PROTECT_KEY,
+        DownloadsController.prototype.streamVideoForWebGet,
+      ),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(
+        ARCJET_PROTECT_KEY,
+        DownloadsController.prototype.streamVideoForWebHead,
+      ),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(
+        ARCJET_PROTECT_KEY,
+        DownloadsController.prototype.authorizeVideoDownload,
+      ),
+    ).toBe('download-authorize');
   });
 
   it('does not expose the web stream as a public ticketed URL', () => {
