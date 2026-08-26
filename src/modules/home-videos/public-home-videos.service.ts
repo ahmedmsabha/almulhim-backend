@@ -1,9 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppEnv } from '../../config/env.schema';
 import { PrismaService } from '../../lib/database/prisma.service';
-import { R2StorageService } from '../../lib/storage/r2-storage.service';
+import {
+  R2StorageService,
+  type ObjectMetadata,
+  type ObjectStreamResult,
+} from '../../lib/storage/r2-storage.service';
 import type { PublicHomeVideoListResponse } from './types/public-home-video.response';
+
+export type HomeVideoStreamAccess = {
+  storageKey: string;
+  contentType: string;
+  contentLength: number | undefined;
+};
 
 @Injectable()
 export class PublicHomeVideosService {
@@ -69,5 +84,64 @@ export class PublicHomeVideosService {
       this.logger.error('Failed to list public home videos', error);
       throw error;
     }
+  }
+
+  async resolvePublishedStreamAccess(
+    homeVideoId: string,
+  ): Promise<HomeVideoStreamAccess> {
+    const row = await this.prismaService.homeVideo.findFirst({
+      where: {
+        id: homeVideoId,
+        isPublished: true,
+        storageKey: { not: null },
+      },
+    });
+
+    if (!row?.storageKey) {
+      throw new NotFoundException('Home video not found');
+    }
+
+    const objectMetadata = await this.r2StorageService.headObject(
+      row.storageKey,
+    );
+    if (!objectMetadata) {
+      throw new NotFoundException('Home video not found');
+    }
+
+    return {
+      storageKey: row.storageKey,
+      contentType: objectMetadata.contentType ?? 'video/mp4',
+      contentLength: objectMetadata.contentLength,
+    };
+  }
+
+  headVideoMetadata(access: HomeVideoStreamAccess): ObjectMetadata {
+    return {
+      contentType: access.contentType,
+      contentLength: access.contentLength,
+    };
+  }
+
+  async openVideoStream(
+    access: HomeVideoStreamAccess,
+    rangeHeader?: string,
+  ): Promise<ObjectStreamResult> {
+    const stream = await this.r2StorageService.getObjectStream(
+      access.storageKey,
+      rangeHeader,
+    );
+
+    if (!stream) {
+      throw new NotFoundException('Home video not found');
+    }
+
+    if (rangeHeader && stream.statusCode !== 206) {
+      stream.body.destroy();
+      throw new InternalServerErrorException(
+        'Storage did not honor HTTP Range',
+      );
+    }
+
+    return stream;
   }
 }
