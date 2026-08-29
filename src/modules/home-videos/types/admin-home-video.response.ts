@@ -1,8 +1,13 @@
 import type { HomeVideo } from '../../../generated/prisma/client';
+import {
+  parseStoredTitleLines,
+  type HomeVideoTitleLine,
+} from '../utils/home-video-title-lines';
 
 export type AdminHomeVideoSummaryResponse = {
   id: string;
   title: string;
+  titleLines: HomeVideoTitleLine[] | null;
   storageKey: string | null;
   sortOrder: number;
   isPublished: boolean;
@@ -31,6 +36,7 @@ export const toAdminHomeVideoSummaryResponse = (
 ): AdminHomeVideoSummaryResponse => ({
   id: homeVideo.id,
   title: homeVideo.title,
+  titleLines: parseStoredTitleLines(homeVideo.titleLines),
   storageKey: homeVideo.storageKey,
   sortOrder: homeVideo.sortOrder,
   isPublished: homeVideo.isPublished,

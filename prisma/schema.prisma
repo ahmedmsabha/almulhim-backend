@@ -225,6 +225,7 @@ model Announcement {
 model HomeVideo {
   id          String    @id @default(uuid()) @db.Uuid
   title       String
+  titleLines  Json?     @map("title_lines")
   storageKey  String?   @map("storage_key")
   sortOrder   Int       @default(0) @map("sort_order")
   isPublished Boolean   @default(false) @map("is_published")

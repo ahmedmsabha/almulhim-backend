@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
 import { PrismaService } from '../../lib/database/prisma.service';
+import { Prisma } from '../../generated/prisma/client';
 import {
   HOME_VIDEO_CONTENT_TYPE_EXTENSION,
   HOME_VIDEO_KEY_PREFIX,
@@ -36,6 +37,10 @@ import {
   homeVideoValidationErrorMessage,
   validateHomeVideoObjectMetadata,
 } from './utils/home-video-object.validation';
+import {
+  titleLinesToPlainText,
+  type HomeVideoTitleLine,
+} from './utils/home-video-title-lines';
 
 @Injectable()
 export class AdminHomeVideosService {
@@ -68,11 +73,20 @@ export class AdminHomeVideosService {
 
   async create(input: unknown): Promise<AdminHomeVideoSummaryResponse> {
     const validatedInput = this.parseCreateInput(input);
+    const title = this.deriveTitle(
+      validatedInput.title,
+      validatedInput.titleLines,
+    );
+
+    if (!title) {
+      throw new BadRequestException('Either title or titleLines is required');
+    }
 
     try {
       const homeVideo = await this.prismaService.homeVideo.create({
         data: {
-          title: validatedInput.title,
+          title,
+          titleLines: validatedInput.titleLines ?? undefined,
           sortOrder: validatedInput.sortOrder,
         },
       });
@@ -91,10 +105,19 @@ export class AdminHomeVideosService {
     const validatedInput = this.parseUpdateInput(input);
     await this.requireHomeVideo(homeVideoId);
 
+    const title = this.deriveTitle(
+      validatedInput.title,
+      validatedInput.titleLines,
+    );
+
     try {
       const homeVideo = await this.prismaService.homeVideo.update({
         where: { id: homeVideoId },
-        data: validatedInput,
+        data: {
+          title,
+          titleLines: this.resolveTitleLinesUpdate(validatedInput),
+          sortOrder: validatedInput.sortOrder,
+        },
       });
 
       return toAdminHomeVideoSummaryResponse(homeVideo);
@@ -257,6 +280,25 @@ export class AdminHomeVideosService {
       );
       throw error;
     }
+  }
+
+  /** `titleLines` wins so the plain `title` column stays in sync with them. */
+  private deriveTitle(
+    title: string | undefined,
+    titleLines: HomeVideoTitleLine[] | undefined,
+  ): string | undefined {
+    return titleLines ? titleLinesToPlainText(titleLines) : title;
+  }
+
+  /**
+   * A `title`-only update means "plain title", so any styled lines are dropped
+   * rather than left behind describing the previous title.
+   */
+  private resolveTitleLinesUpdate(
+    input: UpdateHomeVideoInput,
+  ): HomeVideoTitleLine[] | typeof Prisma.DbNull | undefined {
+    if (input.titleLines) return input.titleLines;
+    return input.title ? Prisma.DbNull : undefined;
   }
 
   private parseCreateInput(input: unknown): CreateHomeVideoInput {

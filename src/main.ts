@@ -16,6 +16,9 @@ async function bootstrap(): Promise<void> {
         origin: corsOrigins,
         credentials: true,
         exposedHeaders: ['Accept-Ranges', 'Content-Range', 'Content-Length'],
+        // Web video streams one authenticated Range request per chunk; without a
+        // cached preflight the browser re-sends OPTIONS every few seconds.
+        maxAge: 86_400,
       });
     }
 

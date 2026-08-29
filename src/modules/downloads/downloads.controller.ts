@@ -93,9 +93,10 @@ export class DownloadsController {
   /**
    * Proxied video stream for iOS AVPlayer.
    * Auth via short-lived `ticket` query param (AVPlayer cannot reliably send Bearer headers).
+   * Shield-only, like `/web-stream`: a single playback issues many Range requests,
+   * so a per-user request window here would cut playback off mid-video.
    */
   @Public()
-  @ArcjetProtect('download-authorize')
   @Get('videos/:lessonVideoId/stream')
   async streamVideoGet(
     @Res() response: Response,
@@ -110,7 +111,6 @@ export class DownloadsController {
   }
 
   @Public()
-  @ArcjetProtect('download-authorize')
   @Head('videos/:lessonVideoId/stream')
   async streamVideoHead(
     @Res() response: Response,

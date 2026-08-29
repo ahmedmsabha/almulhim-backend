@@ -13,6 +13,7 @@ import {
   type ObjectStreamResult,
 } from '../../lib/storage/r2-storage.service';
 import type { PublicHomeVideoListResponse } from './types/public-home-video.response';
+import { parseStoredTitleLines } from './utils/home-video-title-lines';
 
 export type HomeVideoStreamAccess = {
   storageKey: string;
@@ -64,6 +65,7 @@ export class PublicHomeVideosService {
               return {
                 id: row.id,
                 title: row.title,
+                titleLines: parseStoredTitleLines(row.titleLines),
                 sortOrder: row.sortOrder,
                 playbackUrl,
                 playbackExpiresInSeconds: expiresInSeconds,

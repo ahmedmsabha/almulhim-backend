@@ -64,9 +64,28 @@ export type VideoStreamAccess = {
   contentLength: number | undefined;
 };
 
+/**
+ * A single playback issues one request per Range, and each one otherwise costs
+ * two or three queries plus an R2 HeadObject. Access is cached briefly so seeking
+ * stays cheap; revocation still lands within the window and every new playback
+ * re-checks access through the authorize endpoint.
+ */
+const STREAM_ACCESS_CACHE_TTL_MS = 60_000;
+const STREAM_ACCESS_CACHE_MAX_ENTRIES = 2_000;
+
+type StreamAccessCacheEntry = {
+  userId: string;
+  access: VideoStreamAccess;
+  expiresAt: number;
+};
+
 @Injectable()
 export class DownloadsService {
   private readonly logger = new Logger(DownloadsService.name);
+  private readonly streamAccessCache = new Map<
+    string,
+    StreamAccessCacheEntry
+  >();
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -119,10 +138,18 @@ export class DownloadsService {
     lessonVideoId: string,
   ): Promise<VideoStreamAccess> {
     const pepper = this.configService.get('DEVICE_HASH_PEPPER', { infer: true });
+    // Signature and expiry are re-checked on every request; only the access
+    // lookup behind them is cached.
     const claims = verifyVideoStreamTicket(ticket, pepper);
 
     if (claims.lessonVideoId !== lessonVideoId) {
       throw new UnauthorizedException('Stream ticket mismatch');
+    }
+
+    const cacheKey = `ticket:${claims.userId}:${claims.deviceHash}:${lessonVideoId}`;
+    const cached = this.readStreamAccessCache(cacheKey);
+    if (cached) {
+      return cached;
     }
 
     const user = await this.prismaService.user.findUnique({
@@ -139,7 +166,13 @@ export class DownloadsService {
       deviceIdentifier: 'ticket',
     };
 
-    return this.resolveVideoStreamAccess(user, device, lessonVideoId);
+    const access = await this.resolveVideoStreamAccess(
+      user,
+      device,
+      lessonVideoId,
+    );
+    this.writeStreamAccessCache(cacheKey, user.id, access);
+    return access;
   }
 
   async resolveVideoStreamAccessFromRequest(
@@ -164,6 +197,12 @@ export class DownloadsService {
   ): Promise<VideoStreamAccess> {
     this.assertBoundMediaDevice(device);
 
+    const cacheKey = `user:${user.id}:${device.deviceHash}:${lessonVideoId}`;
+    const cached = this.readStreamAccessCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const lessonVideo = await this.loadAccessibleLessonVideo(
       user,
       lessonVideoId,
@@ -184,11 +223,69 @@ export class DownloadsService {
       throw new NotFoundException('Lesson video not found');
     }
 
-    return {
+    const access: VideoStreamAccess = {
       storageKey: lessonVideo.storageKey,
       contentType: objectMetadata.contentType ?? 'video/mp4',
       contentLength: objectMetadata.contentLength,
     };
+
+    this.writeStreamAccessCache(cacheKey, user.id, access);
+
+    return access;
+  }
+
+  private readStreamAccessCache(key: string): VideoStreamAccess | null {
+    const entry = this.streamAccessCache.get(key);
+    if (!entry) {
+      return null;
+    }
+
+    if (entry.expiresAt <= Date.now()) {
+      this.streamAccessCache.delete(key);
+      return null;
+    }
+
+    return entry.access;
+  }
+
+  private writeStreamAccessCache(
+    key: string,
+    userId: string,
+    access: VideoStreamAccess,
+  ): void {
+    if (this.streamAccessCache.size >= STREAM_ACCESS_CACHE_MAX_ENTRIES) {
+      this.pruneStreamAccessCache();
+    }
+
+    this.streamAccessCache.set(key, {
+      userId,
+      access,
+      expiresAt: Date.now() + STREAM_ACCESS_CACHE_TTL_MS,
+    });
+  }
+
+  private pruneStreamAccessCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.streamAccessCache) {
+      if (entry.expiresAt <= now) {
+        this.streamAccessCache.delete(key);
+      }
+    }
+
+    // Map iterates in insertion order, so this drops the least recently written.
+    while (this.streamAccessCache.size >= STREAM_ACCESS_CACHE_MAX_ENTRIES) {
+      const oldest = this.streamAccessCache.keys().next();
+      if (oldest.done) break;
+      this.streamAccessCache.delete(oldest.value);
+    }
+  }
+
+  private invalidateStreamAccessCache(userId: string): void {
+    for (const [key, entry] of this.streamAccessCache) {
+      if (entry.userId === userId) {
+        this.streamAccessCache.delete(key);
+      }
+    }
   }
 
   headVideoMetadata(access: VideoStreamAccess): ObjectMetadata {
@@ -268,6 +365,14 @@ export class DownloadsService {
             key: lessonVideo.storageKey,
             expiresInSeconds,
           });
+
+      // The ticket outlives the signed URL on purpose: the native player reuses
+      // one ticketed URL for the whole session, so tying it to the 15-minute
+      // signed-URL window breaks any lesson longer than that mid-playback.
+      const ticketTtlSeconds = this.configService.get(
+        'STREAM_TICKET_TTL_SECONDS',
+        { infer: true },
+      );
       const streamTicket = isWeb
         ? ''
         : createVideoStreamTicket(
@@ -275,7 +380,7 @@ export class DownloadsService {
               userId: user.id,
               lessonVideoId,
               deviceHash: device.deviceHash,
-              exp: Math.floor(expiresAt.getTime() / 1000),
+              exp: Math.floor(Date.now() / 1000) + ticketTtlSeconds,
             },
             this.configService.get('DEVICE_HASH_PEPPER', { infer: true }),
           );
@@ -467,6 +572,8 @@ export class DownloadsService {
           },
         }),
       ]);
+
+      this.invalidateStreamAccessCache(userId);
     } catch (error) {
       this.logger.error(`Failed to revoke downloads for user ${userId}`, error);
       throw error;

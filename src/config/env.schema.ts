@@ -68,6 +68,18 @@ export const appEnvSchema = z
 
     SIGNED_URL_TTL_SECONDS: z.coerce.number().int().positive().default(900),
 
+    /**
+     * Lifetime of a mobile playback ticket. Must outlast a viewing session: the
+     * native player reuses the same ticketed URL for every Range request, so a
+     * short TTL cuts long lessons off mid-playback. Access itself is re-checked
+     * server-side per request, so this only bounds the capability, not the grant.
+     */
+    STREAM_TICKET_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(21_600),
+
     /** Keep false until Mobile registers Expo push tokens. In-app Notification rows are created regardless. */
     PUSH_NOTIFICATIONS_ENABLED: booleanFromEnv.default(false),
   })
