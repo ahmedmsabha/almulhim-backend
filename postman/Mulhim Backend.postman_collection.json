@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "f9cf2f7e-dccf-4615-941f-86ba881ee718",
+    "_postman_id": "45bd9c62-220b-41f6-a256-153dfedf8ca3",
     "name": "Mulhim Backend",
     "description": "Complete Mulhim learning platform backend API.\n\nAuth: Clerk bearer tokens. Set `studentBearerToken` or `adminBearerToken` in the Local environment.\n\nDevice-bound routes require `X-Device-Id` (16–128 chars) and `X-Device-Type` (`web` or `mobile`).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -272,7 +272,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"الفصل الأول\",\n      \"description\": \"الوحدة الأولى والثانية\",\n      \"priceGaza\": 12000,\n      \"priceWestBank\": 25000,\n      \"currency\": \"ILS\",\n      \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n      \"startsAt\": null,\n      \"sortOrder\": 0,\n      \"units\": [\n        {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n          \"title\": \"الوحدة الأولى\"\n        }\n      ]\n    }\n  ]\n}"
+              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"باقة الفصل الأول\",\n      \"description\": \"الوحدة الأولى والثانية\",\n      \"priceGaza\": 12000,\n      \"priceWestBank\": 25000,\n      \"currency\": \"ILS\",\n      \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n      \"startsAt\": null,\n      \"sortOrder\": 0,\n      \"units\": [\n        {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n          \"title\": \"الوحدة الأولى\"\n        }\n      ]\n    }\n  ]\n}"
             }
           ]
         },
@@ -311,7 +311,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"الفصل الأول\",\n      \"description\": \"الوحدة الأولى والثانية\",\n      \"priceAmount\": 12000,\n      \"currency\": \"ILS\",\n      \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n      \"startsAt\": null,\n      \"sortOrder\": 0,\n      \"units\": [\n        {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n          \"title\": \"الوحدة الأولى\"\n        }\n      ]\n    }\n  ]\n}"
+              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"باقة الفصل الأول\",\n      \"description\": \"الوحدة الأولى والثانية\",\n      \"priceAmount\": 12000,\n      \"currency\": \"ILS\",\n      \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n      \"startsAt\": null,\n      \"sortOrder\": 0,\n      \"units\": [\n        {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n          \"title\": \"الوحدة الأولى\"\n        }\n      ]\n    }\n  ]\n}"
             }
           ]
         },
@@ -350,7 +350,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"الفصل الأول\",\n      \"description\": \"الوحدة الأولى والثانية\",\n      \"priceGaza\": 12000,\n      \"priceWestBank\": 25000,\n      \"currency\": \"ILS\",\n      \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n      \"startsAt\": null,\n      \"sortOrder\": 0,\n      \"units\": [\n        {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n          \"title\": \"الوحدة الأولى\"\n        }\n      ],\n      \"unitIds\": [\n        \"550e8400-e29b-41d4-a716-446655440010\"\n      ],\n      \"isActive\": true,\n      \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"plans\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"name\": \"باقة الفصل الأول\",\n      \"description\": \"الوحدة الأولى والثانية\",\n      \"priceGaza\": 12000,\n      \"priceWestBank\": 25000,\n      \"currency\": \"ILS\",\n      \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n      \"startsAt\": null,\n      \"sortOrder\": 0,\n      \"units\": [\n        {\n          \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n          \"title\": \"الوحدة الأولى\"\n        }\n      ],\n      \"unitIds\": [\n        \"550e8400-e29b-41d4-a716-446655440010\"\n      ],\n      \"isActive\": true,\n      \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -377,7 +377,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"الفصل الأول\",\n  \"description\": \"الوحدة الأولى والثانية\",\n  \"priceGaza\": 12000,\n  \"priceWestBank\": 25000,\n  \"currency\": \"ILS\",\n  \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n  \"startsAt\": null,\n  \"unitIds\": [\n    \"550e8400-e29b-41d4-a716-446655440010\"\n  ],\n  \"sortOrder\": 0\n}"
+              "raw": "{\n  \"name\": \"باقة الفصل الأول\",\n  \"description\": \"الوحدة الأولى والثانية\",\n  \"priceGaza\": 12000,\n  \"priceWestBank\": 25000,\n  \"currency\": \"ILS\",\n  \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n  \"startsAt\": null,\n  \"unitIds\": [\n    \"550e8400-e29b-41d4-a716-446655440010\"\n  ],\n  \"sortOrder\": 0\n}"
             }
           },
           "response": [
@@ -398,7 +398,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"الفصل الأول\",\n  \"description\": \"الوحدة الأولى والثانية\",\n  \"priceGaza\": 12000,\n  \"priceWestBank\": 25000,\n  \"currency\": \"ILS\",\n  \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n  \"startsAt\": null,\n  \"sortOrder\": 0,\n  \"units\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n      \"title\": \"الوحدة الأولى\"\n    }\n  ],\n  \"unitIds\": [\n    \"550e8400-e29b-41d4-a716-446655440010\"\n  ],\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"باقة الفصل الأول\",\n  \"description\": \"الوحدة الأولى والثانية\",\n  \"priceGaza\": 12000,\n  \"priceWestBank\": 25000,\n  \"currency\": \"ILS\",\n  \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n  \"startsAt\": null,\n  \"sortOrder\": 0,\n  \"units\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n      \"title\": \"الوحدة الأولى\"\n    }\n  ],\n  \"unitIds\": [\n    \"550e8400-e29b-41d4-a716-446655440010\"\n  ],\n  \"isActive\": true,\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-01-01T00:00:00.000Z\"\n}"
             }
           ]
         },
@@ -446,7 +446,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"الفصل الأول\",\n  \"description\": \"الوحدة الأولى والثانية\",\n  \"priceGaza\": 12000,\n  \"priceWestBank\": 25000,\n  \"currency\": \"ILS\",\n  \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n  \"startsAt\": null,\n  \"sortOrder\": 0,\n  \"units\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n      \"title\": \"الوحدة الأولى\"\n    }\n  ],\n  \"unitIds\": [\n    \"550e8400-e29b-41d4-a716-446655440010\"\n  ],\n  \"isActive\": false,\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T00:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"باقة الفصل الأول\",\n  \"description\": \"الوحدة الأولى والثانية\",\n  \"priceGaza\": 12000,\n  \"priceWestBank\": 25000,\n  \"currency\": \"ILS\",\n  \"accessEndsAt\": \"2027-06-30T21:00:00.000Z\",\n  \"startsAt\": null,\n  \"sortOrder\": 0,\n  \"units\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n      \"title\": \"الوحدة الأولى\"\n    }\n  ],\n  \"unitIds\": [\n    \"550e8400-e29b-41d4-a716-446655440010\"\n  ],\n  \"isActive\": false,\n  \"createdAt\": \"2026-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T00:00:00.000Z\"\n}"
             }
           ]
         }
@@ -548,7 +548,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"pending_review\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"expiresAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T12:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"pending_review\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"باقة الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"expiresAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T12:00:00.000Z\"\n}"
             }
           ]
         },
@@ -587,7 +587,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"subscriptions\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"status\": \"pending_approval\",\n      \"plan\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"الفصل الأول\",\n        \"priceGaza\": 12000,\n        \"priceWestBank\": 25000,\n        \"currency\": \"ILS\"\n      },\n      \"receiptSenderName\": \"Ahmad Student\",\n      \"expiresAt\": null,\n      \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n      \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n    }\n  ],\n  \"overallStatus\": \"pending_approval\",\n  \"entitledUnitIds\": []\n}"
+              "body": "{\n  \"subscriptions\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"status\": \"pending_approval\",\n      \"plan\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"باقة الفصل الأول\",\n        \"priceGaza\": 12000,\n        \"priceWestBank\": 25000,\n        \"currency\": \"ILS\"\n      },\n      \"receiptSenderName\": \"Ahmad Student\",\n      \"expiresAt\": null,\n      \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n      \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n    }\n  ],\n  \"overallStatus\": \"pending_approval\",\n  \"entitledUnitIds\": []\n}"
             }
           ]
         }
@@ -632,7 +632,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"subscriptions\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"status\": \"pending_approval\",\n      \"plan\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"الفصل الأول\",\n        \"priceGaza\": 12000,\n        \"priceWestBank\": 25000,\n        \"currency\": \"ILS\"\n      },\n      \"student\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"fullName\": \"Ahmad Student\",\n        \"email\": \"student@example.com\",\n        \"phoneNumber\": \"0599000000\",\n        \"region\": \"gaza\"\n      },\n      \"receiptSenderName\": \"Ahmad Student\",\n      \"verificationResult\": {\n        \"version\": 1,\n        \"passed\": true,\n        \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n        \"aiEnabled\": true,\n        \"model\": \"gemini-3.1-flash-lite\",\n        \"error\": null,\n        \"checks\": {\n          \"recipientMatch\": {\n            \"passed\": true,\n            \"detected\": \"Teacher Name\",\n            \"reason\": null\n          },\n          \"senderMatch\": {\n            \"passed\": true,\n            \"detected\": \"Ahmad Student\",\n            \"expected\": \"Ahmad Student\",\n            \"reason\": null\n          },\n          \"notDuplicate\": {\n            \"passed\": true,\n            \"detected\": \"TX-123\",\n            \"transactionReference\": \"TX-123\",\n            \"reason\": null\n          }\n        },\n        \"notes\": null\n      },\n      \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n      \"approvedAt\": null,\n      \"rejectedAt\": null,\n      \"rejectionReason\": null,\n      \"expiresAt\": null,\n      \"suspendedAt\": null,\n      \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n      \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"subscriptions\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"status\": \"pending_approval\",\n      \"plan\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"باقة الفصل الأول\",\n        \"priceGaza\": 12000,\n        \"priceWestBank\": 25000,\n        \"currency\": \"ILS\"\n      },\n      \"student\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"fullName\": \"Ahmad Student\",\n        \"email\": \"student@example.com\",\n        \"phoneNumber\": \"0599000000\",\n        \"region\": \"gaza\"\n      },\n      \"receiptSenderName\": \"Ahmad Student\",\n      \"verificationResult\": {\n        \"version\": 1,\n        \"passed\": true,\n        \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n        \"aiEnabled\": true,\n        \"model\": \"gemini-3.1-flash-lite\",\n        \"error\": null,\n        \"checks\": {\n          \"recipientMatch\": {\n            \"passed\": true,\n            \"detected\": \"Teacher Name\",\n            \"reason\": null\n          },\n          \"senderMatch\": {\n            \"passed\": true,\n            \"detected\": \"Ahmad Student\",\n            \"expected\": \"Ahmad Student\",\n            \"reason\": null\n          },\n          \"notDuplicate\": {\n            \"passed\": true,\n            \"detected\": \"TX-123\",\n            \"transactionReference\": \"TX-123\",\n            \"reason\": null\n          }\n        },\n        \"notes\": null\n      },\n      \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n      \"approvedAt\": null,\n      \"rejectedAt\": null,\n      \"rejectionReason\": null,\n      \"expiresAt\": null,\n      \"suspendedAt\": null,\n      \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n      \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -671,7 +671,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"pending_approval\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"version\": 1,\n    \"passed\": true,\n    \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n    \"aiEnabled\": true,\n    \"model\": \"gemini-3.1-flash-lite\",\n    \"error\": null,\n    \"checks\": {\n      \"recipientMatch\": {\n        \"passed\": true,\n        \"detected\": \"Teacher Name\",\n        \"reason\": null\n      },\n      \"senderMatch\": {\n        \"passed\": true,\n        \"detected\": \"Ahmad Student\",\n        \"expected\": \"Ahmad Student\",\n        \"reason\": null\n      },\n      \"notDuplicate\": {\n        \"passed\": true,\n        \"detected\": \"TX-123\",\n        \"transactionReference\": \"TX-123\",\n        \"reason\": null\n      }\n    },\n    \"notes\": null\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": null,\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": null,\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"pending_approval\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"باقة الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"version\": 1,\n    \"passed\": true,\n    \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n    \"aiEnabled\": true,\n    \"model\": \"gemini-3.1-flash-lite\",\n    \"error\": null,\n    \"checks\": {\n      \"recipientMatch\": {\n        \"passed\": true,\n        \"detected\": \"Teacher Name\",\n        \"reason\": null\n      },\n      \"senderMatch\": {\n        \"passed\": true,\n        \"detected\": \"Ahmad Student\",\n        \"expected\": \"Ahmad Student\",\n        \"reason\": null\n      },\n      \"notDuplicate\": {\n        \"passed\": true,\n        \"detected\": \"TX-123\",\n        \"transactionReference\": \"TX-123\",\n        \"reason\": null\n      }\n    },\n    \"notes\": null\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": null,\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": null,\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T12:30:00.000Z\"\n}"
             }
           ]
         },
@@ -749,7 +749,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"active\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": true\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": \"2027-06-30T21:00:00.000Z\",\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T13:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"active\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"باقة الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": true\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": \"2027-06-30T21:00:00.000Z\",\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T13:00:00.000Z\"\n}"
             }
           ]
         },
@@ -797,7 +797,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"rejected\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": false\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": null,\n  \"rejectedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectionReason\": \"Receipt does not match sender name\",\n  \"expiresAt\": null,\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T13:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"rejected\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"باقة الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": false\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": null,\n  \"rejectedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectionReason\": \"Receipt does not match sender name\",\n  \"expiresAt\": null,\n  \"suspendedAt\": null,\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-01T13:00:00.000Z\"\n}"
             }
           ]
         },
@@ -836,7 +836,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"suspended\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": true\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": \"2027-06-30T21:00:00.000Z\",\n  \"suspendedAt\": \"2026-02-15T09:00:00.000Z\",\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-15T09:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"status\": \"suspended\",\n  \"plan\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"name\": \"باقة الفصل الأول\",\n    \"priceGaza\": 12000,\n    \"priceWestBank\": 25000,\n    \"currency\": \"ILS\"\n  },\n  \"student\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"fullName\": \"Ahmad Student\",\n    \"email\": \"student@example.com\",\n    \"phoneNumber\": \"0599000000\",\n    \"region\": \"gaza\"\n  },\n  \"receiptSenderName\": \"Ahmad Student\",\n  \"verificationResult\": {\n    \"passed\": true\n  },\n  \"verifiedAt\": \"2026-02-01T12:30:00.000Z\",\n  \"approvedAt\": \"2026-02-01T13:00:00.000Z\",\n  \"rejectedAt\": null,\n  \"rejectionReason\": null,\n  \"expiresAt\": \"2027-06-30T21:00:00.000Z\",\n  \"suspendedAt\": \"2026-02-15T09:00:00.000Z\",\n  \"createdAt\": \"2026-02-01T12:00:00.000Z\",\n  \"updatedAt\": \"2026-02-15T09:00:00.000Z\"\n}"
             }
           ]
         }

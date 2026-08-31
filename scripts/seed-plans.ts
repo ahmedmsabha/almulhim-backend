@@ -1,9 +1,9 @@
 /**
- * Dev seed: three content-based subscription plans with Gaza / West Bank prices
- * and unit links.
+ * Upsert the three content-based plans, rename legacy titles, and delete any
+ * leftover time-based plans (and their subscriptions).
  *
  * Usage (from almulhim-backend):
- *   npx ts-node --transpile-only scripts/seed-plans.ts
+ *   npm run seed:plans
  */
 import 'dotenv/config';
 import { Pool } from 'pg';
@@ -31,7 +31,7 @@ type PlanSeed = {
 
 const PLANS: PlanSeed[] = [
   {
-    name: 'الفصل الأول',
+    name: 'باقة الفصل الأول',
     description: 'الوحدة الأولى والوحدة الثانية',
     priceGaza: 12000,
     priceWestBank: 25000,
@@ -40,7 +40,7 @@ const PLANS: PlanSeed[] = [
     unitTitles: ['الوحدة الأولى', 'الوحدة الثانية'],
   },
   {
-    name: 'الفصل الثاني',
+    name: 'باقة الفصل الثاني',
     description: 'الوحدة الثالثة والمراجعة والتجريبي',
     priceGaza: 12000,
     priceWestBank: 25000,
@@ -49,7 +49,7 @@ const PLANS: PlanSeed[] = [
     unitTitles: ['الوحدة الثالثة', 'مراجعة', 'تجريبي'],
   },
   {
-    name: 'الاشتراك السنوي',
+    name: 'الباقة السنوية',
     description: 'كل الوحدات',
     priceGaza: 24000,
     priceWestBank: 50000,
@@ -58,6 +58,13 @@ const PLANS: PlanSeed[] = [
     unitTitles: UNITS.map((unit) => unit.title),
   },
 ];
+
+/** Previous titles so re-running the seed renames instead of duplicating. */
+const PLAN_NAME_ALIASES: Record<string, readonly string[]> = {
+  'باقة الفصل الأول': ['باقة الفصل الأول', 'الفصل الأول'],
+  'باقة الفصل الثاني': ['باقة الفصل الثاني', 'الفصل الثاني'],
+  'الباقة السنوية': ['الباقة السنوية', 'الاشتراك السنوي'],
+};
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -96,10 +103,16 @@ async function main(): Promise<void> {
       unitIdsByTitle.set(unit.title, inserted.rows[0].id);
     }
 
+    const keptPlanIds: string[] = [];
+
     for (const plan of PLANS) {
-      const existing = await pool.query<{ id: string }>(
-        `SELECT id FROM subscription_plans WHERE name = $1 LIMIT 1`,
-        [plan.name],
+      const aliases = PLAN_NAME_ALIASES[plan.name] ?? [plan.name];
+      const existing = await pool.query<{ id: string; name: string }>(
+        `SELECT id, name FROM subscription_plans
+         WHERE name = ANY($1::text[])
+         ORDER BY CASE WHEN name = $2 THEN 0 ELSE 1 END
+         LIMIT 1`,
+        [aliases, plan.name],
       );
 
       const planId = existing.rows[0]
@@ -127,29 +140,31 @@ async function main(): Promise<void> {
             )
           ).rows[0].id;
 
-      if (existing.rows[0]) {
-        await pool.query(
-          `UPDATE subscription_plans
-           SET description = $2,
-               price_gaza = $3,
-               price_west_bank = $4,
-               access_ends_at = $5::timestamptz,
-               starts_at = $6::timestamptz,
-               sort_order = $7,
-               is_active = true,
-               updated_at = NOW()
-           WHERE id = $1`,
-          [
-            planId,
-            plan.description,
-            plan.priceGaza,
-            plan.priceWestBank,
-            ACCESS_ENDS_AT,
-            plan.startsAt,
-            plan.sortOrder,
-          ],
-        );
-      }
+      keptPlanIds.push(planId);
+
+      await pool.query(
+        `UPDATE subscription_plans
+         SET name = $2,
+             description = $3,
+             price_gaza = $4,
+             price_west_bank = $5,
+             access_ends_at = $6::timestamptz,
+             starts_at = $7::timestamptz,
+             sort_order = $8,
+             is_active = true,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [
+          planId,
+          plan.name,
+          plan.description,
+          plan.priceGaza,
+          plan.priceWestBank,
+          ACCESS_ENDS_AT,
+          plan.startsAt,
+          plan.sortOrder,
+        ],
+      );
 
       await pool.query(`DELETE FROM plan_units WHERE plan_id = $1`, [planId]);
 
@@ -166,11 +181,25 @@ async function main(): Promise<void> {
       }
     }
 
+    const deletedSubscriptions = await pool.query(
+      `DELETE FROM subscriptions
+       WHERE plan_id <> ALL($1::uuid[])`,
+      [keptPlanIds],
+    );
+    const deletedPlans = await pool.query<{ id: string; name: string }>(
+      `DELETE FROM subscription_plans
+       WHERE id <> ALL($1::uuid[])
+       RETURNING id, name`,
+      [keptPlanIds],
+    );
+
     await pool.query('COMMIT');
     console.log(
       JSON.stringify(
         {
           plans: PLANS.map((plan) => plan.name),
+          removedPlans: deletedPlans.rows.map((row) => row.name),
+          removedSubscriptions: deletedSubscriptions.rowCount ?? 0,
           units: UNITS.map((unit) => unit.title),
         },
         null,

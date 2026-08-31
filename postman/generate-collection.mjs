@@ -23,7 +23,7 @@ const ACCESS_ENDS_AT = '2027-06-30T21:00:00.000Z';
 const SAMPLE_UNITS = [{ id: IDS.unitId, title: 'الوحدة الأولى' }];
 const SAMPLE_PUBLIC_PLAN = {
   id: IDS.planId,
-  name: 'الفصل الأول',
+  name: 'باقة الفصل الأول',
   description: 'الوحدة الأولى والثانية',
   priceGaza: 12000,
   priceWestBank: 25000,
@@ -35,7 +35,7 @@ const SAMPLE_PUBLIC_PLAN = {
 };
 const SAMPLE_STUDENT_PLAN = {
   id: IDS.planId,
-  name: 'الفصل الأول',
+  name: 'باقة الفصل الأول',
   description: 'الوحدة الأولى والثانية',
   priceAmount: 12000,
   currency: 'ILS',
@@ -53,7 +53,7 @@ const SAMPLE_ADMIN_PLAN = {
 };
 const SAMPLE_PLAN_SUMMARY = {
   id: IDS.planId,
-  name: 'الفصل الأول',
+  name: 'باقة الفصل الأول',
   priceGaza: 12000,
   priceWestBank: 25000,
   currency: 'ILS',
@@ -328,7 +328,7 @@ const collection = {
         path: '/plans',
         auth: 'admin',
         body: {
-          name: 'الفصل الأول',
+          name: 'باقة الفصل الأول',
           description: 'الوحدة الأولى والثانية',
           priceGaza: 12000,
           priceWestBank: 25000,
