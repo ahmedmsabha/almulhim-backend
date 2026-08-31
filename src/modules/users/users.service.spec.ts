@@ -279,7 +279,6 @@ describe('UsersService', () => {
         include: {
           subscriptions: {
             orderBy: { createdAt: 'desc' },
-            take: 1,
             select: { status: true },
           },
         },
@@ -496,7 +495,6 @@ describe('UsersService', () => {
         include: {
           subscriptions: {
             orderBy: { createdAt: 'desc' },
-            take: 1,
             select: { status: true },
           },
         },

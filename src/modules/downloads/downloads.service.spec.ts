@@ -99,7 +99,10 @@ describe('DownloadsService', () => {
     sortOrder: 0,
     createdAt: downloadedAt,
     updatedAt: downloadedAt,
-    lesson: previewLesson,
+    lesson: {
+      ...previewLesson,
+      chapter: { unitId: '550e8400-e29b-41d4-a716-446655440010' },
+    },
   };
 
   beforeEach(() => {
@@ -120,9 +123,11 @@ describe('DownloadsService', () => {
       prismaService,
       r2StorageService,
       configService,
+      {
+        getEntitledUnitIds: jest.fn().mockResolvedValue(new Set()),
+      } as never,
     );
 
-    jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue(null);
     jest
       .spyOn(prismaService.lessonVideo, 'findFirst')
       .mockResolvedValue(lessonVideo);
@@ -231,6 +236,7 @@ describe('DownloadsService', () => {
         lesson: {
           ...previewLesson,
           accessLevel: 'subscriber_only' as const,
+          chapter: { unitId: '550e8400-e29b-41d4-a716-446655440010' },
         },
       });
 

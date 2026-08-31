@@ -26,6 +26,7 @@
     "postinstall": "prisma generate",
     "seed:student": "ts-node --transpile-only scripts/add-student.ts",
     "seed:content": "ts-node --transpile-only scripts/seed-content.ts",
+    "seed:plans": "ts-node --transpile-only scripts/seed-plans.ts",
     "probe:r2": "ts-node --transpile-only scripts/probe-r2-signed-get.ts"
   },
   "dependencies": {

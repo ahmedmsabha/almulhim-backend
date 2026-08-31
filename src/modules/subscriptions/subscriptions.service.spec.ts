@@ -10,6 +10,7 @@ jest.mock('../../lib/database/prisma.service', () => ({
 
     subscription = {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       updateMany: jest.fn(),
@@ -41,6 +42,7 @@ import { AnalyticsService } from '../../lib/analytics/analytics.service';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { R2StorageService } from '../../lib/storage/r2-storage.service';
 import { RECEIPT_UPLOAD_EXPIRES_SECONDS } from './constants/receipt-upload.constants';
+import { SubscriptionAccessService } from './subscription-access.service';
 import { SubscriptionsService } from './subscriptions.service';
 
 describe('SubscriptionsService', () => {
@@ -48,6 +50,7 @@ describe('SubscriptionsService', () => {
   let prismaService: PrismaService;
   let r2StorageService: R2StorageService;
   let analyticsService: AnalyticsService;
+  let subscriptionAccessService: { getEntitledUnitIds: jest.Mock };
 
   const studentUser = {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -64,11 +67,13 @@ describe('SubscriptionsService', () => {
 
   const activePlan = {
     id: '550e8400-e29b-41d4-a716-446655440002',
-    name: 'Monthly',
-    description: 'One month access',
-    priceAmount: 9900,
+    name: 'الفصل الأول',
+    description: 'Units 1 and 2',
+    priceGaza: 12000,
+    priceWestBank: 25000,
     currency: 'ILS',
-    durationDays: 30,
+    accessEndsAt: new Date('2027-06-30T21:00:00.000Z'),
+    startsAt: null as Date | null,
     isActive: true,
     sortOrder: 0,
     createdAt: new Date('2026-06-30T10:00:00.000Z'),
@@ -130,10 +135,14 @@ describe('SubscriptionsService', () => {
     prismaService = new PrismaService({} as never);
     r2StorageService = new R2StorageService({} as never);
     analyticsService = new AnalyticsService({} as never);
+    subscriptionAccessService = {
+      getEntitledUnitIds: jest.fn().mockResolvedValue(new Set()),
+    };
     subscriptionsService = new SubscriptionsService(
       prismaService,
       r2StorageService,
       analyticsService,
+      subscriptionAccessService as unknown as SubscriptionAccessService,
     );
   });
 
@@ -162,20 +171,6 @@ describe('SubscriptionsService', () => {
           contentType: 'image/jpeg',
           expiresInSeconds: RECEIPT_UPLOAD_EXPIRES_SECONDS,
         }),
-      );
-    });
-
-    it('throws ConflictException when user already has an open subscription', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440004',
-      });
-
-      await expect(
-        subscriptionsService.createReceiptUploadUrl(studentUser, {
-          contentType: 'image/jpeg',
-        }),
-      ).rejects.toThrow(
-        new ConflictException('User already has an open subscription'),
       );
     });
   });
@@ -213,11 +208,12 @@ describe('SubscriptionsService', () => {
         plan: {
           id: activePlan.id,
           name: activePlan.name,
-          priceAmount: activePlan.priceAmount,
+          priceGaza: activePlan.priceGaza,
+          priceWestBank: activePlan.priceWestBank,
           currency: activePlan.currency,
-          durationDays: activePlan.durationDays,
         },
         receiptSenderName: 'Sender Name',
+        expiresAt: null,
         createdAt: subscriptionRow.createdAt.toISOString(),
         updatedAt: subscriptionRow.updatedAt.toISOString(),
       });
@@ -241,7 +237,7 @@ describe('SubscriptionsService', () => {
       });
     });
 
-    it('throws ConflictException when user already has an open subscription', async () => {
+    it('throws ConflictException when user already has an open subscription for this plan', async () => {
       jest
         .spyOn(prismaService.subscription, 'findFirst')
         .mockImplementation(async (args) => {
@@ -262,7 +258,9 @@ describe('SubscriptionsService', () => {
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
-        new ConflictException('User already has an open subscription'),
+        new ConflictException(
+          'User already has an open subscription for this plan',
+        ),
       );
     });
 
@@ -396,7 +394,9 @@ describe('SubscriptionsService', () => {
       await expect(
         subscriptionsService.submitSubscription(studentUser, submitInput),
       ).rejects.toThrow(
-        new ConflictException('User already has an open subscription'),
+        new ConflictException(
+          'User already has an open subscription for this plan',
+        ),
       );
     });
 
@@ -420,29 +420,36 @@ describe('SubscriptionsService', () => {
   });
 
   describe('getMySubscription', () => {
-    it('returns the latest open subscription', async () => {
+    it('returns the list of open subscriptions with overall status', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(subscriptionRow);
+        .spyOn(prismaService.subscription, 'findMany')
+        .mockResolvedValue([subscriptionRow] as never);
 
       await expect(
         subscriptionsService.getMySubscription(studentUser),
       ).resolves.toEqual({
-        id: subscriptionRow.id,
-        status: 'pending_review',
-        plan: {
-          id: activePlan.id,
-          name: activePlan.name,
-          priceAmount: activePlan.priceAmount,
-          currency: activePlan.currency,
-          durationDays: activePlan.durationDays,
-        },
-        receiptSenderName: 'Sender Name',
-        createdAt: subscriptionRow.createdAt.toISOString(),
-        updatedAt: subscriptionRow.updatedAt.toISOString(),
+        subscriptions: [
+          {
+            id: subscriptionRow.id,
+            status: 'pending_review',
+            plan: {
+              id: activePlan.id,
+              name: activePlan.name,
+              priceGaza: activePlan.priceGaza,
+              priceWestBank: activePlan.priceWestBank,
+              currency: activePlan.currency,
+            },
+            receiptSenderName: 'Sender Name',
+            expiresAt: null,
+            createdAt: subscriptionRow.createdAt.toISOString(),
+            updatedAt: subscriptionRow.updatedAt.toISOString(),
+          },
+        ],
+        overallStatus: 'pending_review',
+        entitledUnitIds: [],
       });
 
-      expect(prismaService.subscription.findFirst).toHaveBeenCalledWith({
+      expect(prismaService.subscription.findMany).toHaveBeenCalledWith({
         where: {
           userId: studentUser.id,
           status: {
@@ -468,15 +475,16 @@ describe('SubscriptionsService', () => {
         expiresAt: new Date('2026-06-01T00:00:00.000Z'),
       };
       jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(overdue);
+        .spyOn(prismaService.subscription, 'findMany')
+        .mockResolvedValue([overdue] as never);
       jest
         .spyOn(prismaService.subscription, 'updateMany')
         .mockResolvedValue({ count: 1 });
 
       const result = await subscriptionsService.getMySubscription(studentUser);
 
-      expect(result.status).toBe('expired');
+      expect(result.subscriptions[0].status).toBe('expired');
+      expect(result.overallStatus).toBe('expired');
       expect(prismaService.subscription.updateMany).toHaveBeenCalledWith({
         where: {
           id: overdue.id,
@@ -494,14 +502,18 @@ describe('SubscriptionsService', () => {
       );
     });
 
-    it('throws NotFoundException when no open subscription exists', async () => {
+    it('returns an empty list when the student has no subscriptions', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(null);
+        .spyOn(prismaService.subscription, 'findMany')
+        .mockResolvedValue([]);
 
       await expect(
         subscriptionsService.getMySubscription(studentUser),
-      ).rejects.toThrow(new NotFoundException('No open subscription found'));
+      ).resolves.toEqual({
+        subscriptions: [],
+        overallStatus: 'free',
+        entitledUnitIds: [],
+      });
     });
   });
 });

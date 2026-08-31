@@ -126,10 +126,11 @@ export class AdminSubscriptionsService {
     }
 
     const approvedAt = new Date();
-    const expiresAt = new Date(
-      approvedAt.getTime() +
-        subscription.plan.durationDays * 24 * 60 * 60 * 1000,
-    );
+    const expiresAt = subscription.plan.accessEndsAt;
+
+    if (expiresAt <= approvedAt) {
+      throw new BadRequestException('Plan access period has already ended');
+    }
 
     try {
       const approvalResult = await this.prismaService.subscription.updateMany({

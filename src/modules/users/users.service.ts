@@ -39,7 +39,6 @@ export type RegisterUserParams = {
 const STUDENT_OWNED_INCLUDE = {
   subscriptions: {
     orderBy: { createdAt: 'desc' as const },
-    take: 1,
     select: { status: true },
   },
 } as const;
@@ -428,14 +427,48 @@ export class UsersService {
   }
 
   /**
-   * Students whose most recent subscription row has the given status.
-   * Used for non-`free` status filters so older closed rows do not match.
+   * Students whose overall subscription status matches `status`.
+   * Overall status is `active` if any row is active, otherwise the most
+   * recent row's status. Used for non-`free` status filters.
    */
   private async findStudentIdsByLatestSubscriptionStatus(
     status: Exclude<StudentSubscriptionStatus, 'free'>,
     includeDeactivated: boolean,
   ): Promise<string[]> {
     try {
+      if (status === 'active') {
+        if (includeDeactivated) {
+          const rows = await this.prismaService.$queryRaw<{ id: string }[]>`
+            SELECT u.id
+            FROM users u
+            WHERE u.role = 'student'::"UserRole"
+              AND EXISTS (
+                SELECT 1
+                FROM subscriptions s
+                WHERE s.user_id = u.id
+                  AND s.status = 'active'::"SubscriptionStatus"
+              )
+          `;
+
+          return rows.map((row) => row.id);
+        }
+
+        const rows = await this.prismaService.$queryRaw<{ id: string }[]>`
+          SELECT u.id
+          FROM users u
+          WHERE u.role = 'student'::"UserRole"
+            AND u.deactivated_at IS NULL
+            AND EXISTS (
+              SELECT 1
+              FROM subscriptions s
+              WHERE s.user_id = u.id
+                AND s.status = 'active'::"SubscriptionStatus"
+            )
+        `;
+
+        return rows.map((row) => row.id);
+      }
+
       if (includeDeactivated) {
         const rows = await this.prismaService.$queryRaw<{ id: string }[]>`
           SELECT u.id
@@ -449,6 +482,12 @@ export class UsersService {
           ) AS latest ON TRUE
           WHERE u.role = 'student'::"UserRole"
             AND latest.status = ${status}::"SubscriptionStatus"
+            AND NOT EXISTS (
+              SELECT 1
+              FROM subscriptions s
+              WHERE s.user_id = u.id
+                AND s.status = 'active'::"SubscriptionStatus"
+            )
         `;
 
         return rows.map((row) => row.id);
@@ -467,6 +506,12 @@ export class UsersService {
         WHERE u.role = 'student'::"UserRole"
           AND u.deactivated_at IS NULL
           AND latest.status = ${status}::"SubscriptionStatus"
+          AND NOT EXISTS (
+            SELECT 1
+            FROM subscriptions s
+            WHERE s.user_id = u.id
+              AND s.status = 'active'::"SubscriptionStatus"
+          )
       `;
 
       return rows.map((row) => row.id);

@@ -54,11 +54,13 @@ describe('AdminSubscriptionsService', () => {
 
   const plan = {
     id: '550e8400-e29b-41d4-a716-446655440002',
-    name: 'Monthly',
-    description: 'One month access',
-    priceAmount: 9900,
+    name: 'الفصل الأول',
+    description: 'Units 1 and 2',
+    priceGaza: 12000,
+    priceWestBank: 25000,
     currency: 'ILS',
-    durationDays: 30,
+    accessEndsAt: new Date('2027-06-30T21:00:00.000Z'),
+    startsAt: null as Date | null,
     isActive: true,
     sortOrder: 0,
     createdAt: new Date('2026-07-01T08:00:00.000Z'),
@@ -319,11 +321,9 @@ describe('AdminSubscriptionsService', () => {
   });
 
   describe('approveSubscription', () => {
-    it('moves pending_approval subscription to active and captures PostHog event', async () => {
+    it('moves pending_approval subscription to active using plan accessEndsAt', async () => {
       const approvedAt = new Date('2026-07-01T12:00:00.000Z');
-      const expectedExpiresAt = new Date(
-        approvedAt.getTime() + plan.durationDays * 24 * 60 * 60 * 1000,
-      );
+      const expectedExpiresAt = plan.accessEndsAt;
 
       jest
         .spyOn(prismaService.subscription, 'findUnique')
@@ -351,7 +351,10 @@ describe('AdminSubscriptionsService', () => {
             id: pendingRow.id,
             status: { in: ['pending_review', 'pending_approval'] },
           },
-          data: expect.objectContaining({ status: 'active' }),
+          data: expect.objectContaining({
+            status: 'active',
+            expiresAt: expectedExpiresAt,
+          }),
         }),
       );
 
@@ -363,6 +366,27 @@ describe('AdminSubscriptionsService', () => {
           adminClerkId,
         },
       );
+    });
+
+    it('rejects approval when plan accessEndsAt is already past', async () => {
+      const expiredPlanRow = {
+        ...pendingRow,
+        plan: {
+          ...plan,
+          accessEndsAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      };
+      jest
+        .spyOn(prismaService.subscription, 'findUnique')
+        .mockResolvedValue(expiredPlanRow as never);
+
+      await expect(
+        service.approveSubscription(pendingRow.id, adminClerkId),
+      ).rejects.toThrow(
+        new BadRequestException('Plan access period has already ended'),
+      );
+
+      expect(prismaService.subscription.updateMany).not.toHaveBeenCalled();
     });
 
     it('also approves from pending_review (admin override)', async () => {

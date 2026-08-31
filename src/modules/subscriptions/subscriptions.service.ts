@@ -32,8 +32,11 @@ import {
   submitSubscriptionSchema,
   type SubmitSubscriptionInput,
 } from './schemas/submit-subscription.schema';
+import { SubscriptionAccessService } from './subscription-access.service';
 import {
+  toMySubscriptionsResponse,
   toSubscriptionResponse,
+  type MySubscriptionsResponse,
   type ReceiptUploadUrlResponse,
   type SubscriptionResponse,
 } from './types/subscription.response';
@@ -50,13 +53,13 @@ export class SubscriptionsService {
     private readonly prismaService: PrismaService,
     private readonly r2StorageService: R2StorageService,
     private readonly analyticsService: AnalyticsService,
+    private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {}
 
   async createReceiptUploadUrl(
     user: User,
     input: unknown,
   ): Promise<ReceiptUploadUrlResponse> {
-    await this.assertNoOpenSubscription(user.id);
     const validatedInput = this.parseReceiptUploadUrlInput(input);
     const receiptStorageKey = this.buildReceiptStorageKey(
       user.id,
@@ -90,7 +93,7 @@ export class SubscriptionsService {
   ): Promise<SubscriptionResponse> {
     const validatedInput = this.parseSubmitSubscriptionInput(input);
 
-    await this.assertNoOpenSubscription(user.id);
+    await this.assertNoOpenSubscriptionForPlan(user.id, validatedInput.planId);
     await this.assertActivePlan(validatedInput.planId);
     this.assertReceiptKeyOwnership(user.id, validatedInput.receiptStorageKey);
     await this.assertReceiptKeyNotUsed(validatedInput.receiptStorageKey);
@@ -131,9 +134,9 @@ export class SubscriptionsService {
     }
   }
 
-  async getMySubscription(user: User): Promise<SubscriptionResponse> {
+  async getMySubscription(user: User): Promise<MySubscriptionsResponse> {
     try {
-      const subscription = await this.prismaService.subscription.findFirst({
+      const rows = await this.prismaService.subscription.findMany({
         where: {
           userId: user.id,
           status: { in: [...OPEN_SUBSCRIPTION_STATUSES, 'expired'] },
@@ -142,19 +145,17 @@ export class SubscriptionsService {
         orderBy: { createdAt: 'desc' },
       });
 
-      if (!subscription) {
-        throw new NotFoundException('No open subscription found');
-      }
+      const subscriptions = await Promise.all(
+        rows.map((row) => this.expireIfOverdue(row)),
+      );
+      const entitledUnitIds = [
+        ...(await this.subscriptionAccessService.getEntitledUnitIds(user.id)),
+      ];
 
-      const expired = await this.expireIfOverdue(subscription);
-      return toSubscriptionResponse(expired);
+      return toMySubscriptionsResponse(subscriptions, entitledUnitIds);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-
       this.logger.error(
-        `Failed to load open subscription for user ${user.id}`,
+        `Failed to load subscriptions for user ${user.id}`,
         error,
       );
       throw error;
@@ -249,22 +250,30 @@ export class SubscriptionsService {
       );
     }
 
-    return new ConflictException('User already has an open subscription');
+    return new ConflictException(
+      'User already has an open subscription for this plan',
+    );
   }
 
-  private async assertNoOpenSubscription(userId: string): Promise<void> {
+  private async assertNoOpenSubscriptionForPlan(
+    userId: string,
+    planId: string,
+  ): Promise<void> {
     try {
       const existingSubscription =
         await this.prismaService.subscription.findFirst({
           where: {
             userId,
+            planId,
             status: { in: OPEN_SUBSCRIPTION_STATUSES },
           },
           select: { id: true },
         });
 
       if (existingSubscription) {
-        throw new ConflictException('User already has an open subscription');
+        throw new ConflictException(
+          'User already has an open subscription for this plan',
+        );
       }
     } catch (error) {
       if (error instanceof ConflictException) {
@@ -272,7 +281,7 @@ export class SubscriptionsService {
       }
 
       this.logger.error(
-        `Failed to check open subscription for user ${userId}`,
+        `Failed to check open subscription for user ${userId} plan ${planId}`,
         error,
       );
       throw error;

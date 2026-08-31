@@ -149,7 +149,7 @@ Admin routes are colocated inside feature modules (e.g. `content/admin/*`, `anal
 | Method | Path            | Description                       |
 | ------ | --------------- | --------------------------------- |
 | GET    | `/health`       | Health check (includes DB status) |
-| GET    | `/plans/public` | Active plans (name + price only)  |
+| GET    | `/plans/public` | Active plans (both region prices + units)  |
 
 ### Student (authenticated + registered)
 
@@ -160,7 +160,7 @@ Admin routes are colocated inside feature modules (e.g. `content/admin/*`, `anal
 | GET    | `/plans`                                     | Active plans (full subscribe fields)       |
 | POST   | `/subscriptions/receipt-upload-url`          | Get presigned receipt upload URL           |
 | POST   | `/subscriptions`                             | Submit subscription with receipt           |
-| GET    | `/subscriptions/me`                          | Current open subscription                  |
+| GET    | `/subscriptions/me`                          | Own subscriptions, overallStatus, entitledUnitIds |
 | GET    | `/content/tree`                              | Full content tree (mobile sync)            |
 | GET    | `/content/units`                             | List units                                 |
 | GET    | `/content/units/:id`                         | Unit detail                                |
@@ -217,7 +217,7 @@ Clients already loaded their authorized tree (`GET /content/tree` or `GET /conte
 | -------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | `q`                  | string                                                                                                 | Case-insensitive search across `fullName`, `email`, `phoneNumber`, `telegramUsername`               |
 | `region`             | `gaza` \| `west_bank`                                                                                  | Exact region match                                                                                  |
-| `status`             | `free` \| `pending_review` \| `pending_approval` \| `active` \| `expired` \| `rejected` \| `suspended` | Filter by derived subscription status (latest subscription, or `free` when none)                    |
+| `status`             | `free` \| `pending_review` \| `pending_approval` \| `active` \| `expired` \| `rejected` \| `suspended` | Filter by overall status (`active` if any row is active; else latest status; `free` when none)       |
 | `includeDeactivated` | `true` \| `false`                                                                                      | Default `false` — hide soft-blocked students (`deactivatedAt != null`). Pass `true` to include them |
 | `page`               | int ≥ 1                                                                                                | Default `1`                                                                                         |
 | `pageSize`           | int 1–100                                                                                              | Default `10`                                                                                        |
@@ -267,7 +267,7 @@ X-Device-Type: web | mobile
 - **Regions:** `gaza`, `west_bank` (students); content/announcements also support `both`
 - **Registration:** Students register as free users first; paid access requires an approved active subscription
 - **Student lifecycle:** Deactivate = soft block (`deactivatedAt` + Clerk ban); Delete = hard remove Nest user (cascade student-owned rows) + Clerk user delete. Nest `clerkId` is always required and kept in sync with Clerk
-- **Content access:** Preview lessons are free by region; subscriber-only lessons require an active non-expired subscription
+- **Content access:** Preview lessons are free by region; subscriber-only lessons require an active unexpired subscription that includes the lesson's unit
 - **Devices:** One web + one mobile device per student; identifiers stored as hashes only
 - **Notifications:** In-app rows on lesson/announcement publish (region-targeted); Expo OS push via `expo-server-sdk` when `PUSH_NOTIFICATIONS_ENABLED=true` and mobile tokens are registered
 - **Downloads:** Mobile-only offline files; student web plays lessons via an authenticated `/web-stream` blob (no public MP4 URL in the page)
@@ -281,8 +281,9 @@ X-Device-Type: web | mobile
 | Model                         | Purpose                                          |
 | ----------------------------- | ------------------------------------------------ |
 | `User`                        | Local user profile linked to Clerk               |
-| `SubscriptionPlan`            | Pricing and duration plans                       |
-| `Subscription`                | Subscription lifecycle (one open state per user) |
+| `SubscriptionPlan`            | Content-based plans with per-region prices       |
+| `PlanUnit`                    | Junction: which units a plan unlocks             |
+| `Subscription`                | Lifecycle row (one open state per user+plan)     |
 | `Unit` / `Chapter` / `Lesson` | Content hierarchy                                |
 | `LessonVideo` / `LessonPdf`   | Lesson media attachments                         |
 | `Announcement`                | Region-targeted announcements                    |

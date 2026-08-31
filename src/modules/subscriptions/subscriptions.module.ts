@@ -5,6 +5,7 @@ import { AdminSubscriptionsController } from './admin-subscriptions.controller';
 import { AdminSubscriptionsService } from './admin-subscriptions.service';
 import { PlansController } from './plans.controller';
 import { PlansService } from './plans.service';
+import { SubscriptionAccessService } from './subscription-access.service';
 import { SubscriptionExpiryScheduler } from './subscription-expiry.scheduler';
 import { SubscriptionsController } from './subscriptions.controller';
 import { SubscriptionsService } from './subscriptions.service';
@@ -22,9 +23,15 @@ import { SubscriptionsService } from './subscriptions.service';
   providers: [
     AdminSubscriptionsService,
     PlansService,
+    SubscriptionAccessService,
     SubscriptionsService,
     SubscriptionExpiryScheduler,
   ],
-  exports: [AdminSubscriptionsService, PlansService, SubscriptionsService],
+  exports: [
+    AdminSubscriptionsService,
+    PlansService,
+    SubscriptionAccessService,
+    SubscriptionsService,
+  ],
 })
 export class SubscriptionsModule {}

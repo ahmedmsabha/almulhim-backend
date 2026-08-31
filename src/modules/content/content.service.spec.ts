@@ -41,6 +41,7 @@ describe('ContentService', () => {
   let aiProviderService: jest.Mocked<
     Pick<AiProviderService, 'isContentSearchAiEnabled' | 'searchContentItems'>
   >;
+  let subscriptionAccessService: { getEntitledUnitIds: jest.Mock };
 
   const studentUser = {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -141,12 +142,16 @@ describe('ContentService', () => {
       isContentSearchAiEnabled: jest.fn().mockReturnValue(true),
       searchContentItems: jest.fn(),
     };
+    subscriptionAccessService = {
+      getEntitledUnitIds: jest.fn().mockResolvedValue(new Set()),
+    };
     contentService = new ContentService(
       prismaService,
       aiProviderService as unknown as AiProviderService,
       {
         createSignedGetUrl: jest.fn().mockResolvedValue('https://cdn.example/cover'),
       } as never,
+      subscriptionAccessService as never,
     );
     jest.clearAllMocks();
     aiProviderService.isContentSearchAiEnabled.mockReturnValue(true);
@@ -199,9 +204,7 @@ describe('ContentService', () => {
 
   describe('getChapter', () => {
     beforeEach(() => {
-      jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(null);
+      subscriptionAccessService.getEntitledUnitIds.mockResolvedValue(new Set());
     });
 
     it('returns chapter with lesson lock flags', async () => {
@@ -244,12 +247,13 @@ describe('ContentService', () => {
 
   describe('getLesson', () => {
     it('returns unlocked lesson with media metadata', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440050',
-      } as never);
+      subscriptionAccessService.getEntitledUnitIds.mockResolvedValue(
+        new Set([gazaUnit.id]),
+      );
 
       jest.spyOn(prismaService.lesson, 'findFirst').mockResolvedValue({
         ...subscriberLesson,
+        chapter: { unitId: gazaUnit.id },
         videos: [lessonVideo],
         pdfs: [lessonPdf],
       });
@@ -260,6 +264,7 @@ describe('ContentService', () => {
       );
 
       expect(result.isLocked).toBe(false);
+      expect(result.unitId).toBe(gazaUnit.id);
       expect(result.videos).toEqual([
         {
           id: lessonVideo.id,
@@ -278,12 +283,11 @@ describe('ContentService', () => {
     });
 
     it('returns locked lesson with empty media arrays', async () => {
-      jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(null);
+      subscriptionAccessService.getEntitledUnitIds.mockResolvedValue(new Set());
 
       jest.spyOn(prismaService.lesson, 'findFirst').mockResolvedValue({
         ...subscriberLesson,
+        chapter: { unitId: gazaUnit.id },
         videos: [lessonVideo],
         pdfs: [lessonPdf],
       });
@@ -299,9 +303,7 @@ describe('ContentService', () => {
     });
 
     it('throws NotFoundException for unavailable lesson', async () => {
-      jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(null);
+      subscriptionAccessService.getEntitledUnitIds.mockResolvedValue(new Set());
       jest.spyOn(prismaService.lesson, 'findFirst').mockResolvedValue(null);
 
       await expect(
@@ -312,9 +314,7 @@ describe('ContentService', () => {
 
   describe('getTree', () => {
     it('returns nested tree with lock flags', async () => {
-      jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(null);
+      subscriptionAccessService.getEntitledUnitIds.mockResolvedValue(new Set());
       jest.spyOn(prismaService.unit, 'findMany').mockResolvedValue([
         {
           ...gazaUnit,
@@ -338,10 +338,10 @@ describe('ContentService', () => {
   });
 
   describe('subscription access', () => {
-    it('unlocks subscriber lessons when subscription is active and not expired', async () => {
-      jest.spyOn(prismaService.subscription, 'findFirst').mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440050',
-      } as never);
+    it('unlocks subscriber lessons when the unit is entitled', async () => {
+      subscriptionAccessService.getEntitledUnitIds.mockResolvedValue(
+        new Set([gazaUnit.id]),
+      );
 
       jest.spyOn(prismaService.chapter, 'findFirst').mockResolvedValue({
         ...chapter,
@@ -350,21 +350,14 @@ describe('ContentService', () => {
 
       const result = await contentService.getChapter(studentUser, chapter.id);
 
-      expect(prismaService.subscription.findFirst).toHaveBeenCalledWith({
-        where: {
-          userId: studentUser.id,
-          status: 'active',
-          expiresAt: { gt: expect.any(Date) },
-        },
-        select: { id: true },
-      });
+      expect(subscriptionAccessService.getEntitledUnitIds).toHaveBeenCalledWith(
+        studentUser.id,
+      );
       expect(result.lessons[0].isLocked).toBe(false);
     });
 
-    it('locks subscriber lessons when subscription is expired', async () => {
-      jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(null);
+    it('locks subscriber lessons when the unit is not entitled', async () => {
+      subscriptionAccessService.getEntitledUnitIds.mockResolvedValue(new Set());
 
       jest.spyOn(prismaService.chapter, 'findFirst').mockResolvedValue({
         ...chapter,

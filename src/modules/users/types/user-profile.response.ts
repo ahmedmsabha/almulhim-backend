@@ -60,7 +60,13 @@ export const toUserProfileResponse = (user: User): UserProfileResponse => ({
 
 export const deriveStudentSubscriptionStatus = (
   subscriptions: Array<{ status: SubscriptionStatus }>,
-): StudentSubscriptionStatus => subscriptions[0]?.status ?? 'free';
+): StudentSubscriptionStatus => {
+  if (subscriptions.some((subscription) => subscription.status === 'active')) {
+    return 'active';
+  }
+
+  return subscriptions[0]?.status ?? 'free';
+};
 
 export const toStudentListItem = (
   user: StudentWithLatestSubscription,

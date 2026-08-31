@@ -6,7 +6,6 @@ import type {
   LessonVideo,
   Unit,
 } from '../../../generated/prisma/client';
-import { computeIsLocked } from '../utils/content-access.utils';
 
 export type ContentSearchResponse = {
   matchingIds: string[];
@@ -36,6 +35,7 @@ export type LessonPdfResponse = {
 
 export type LessonDetailResponse = LessonSummaryResponse & {
   chapterId: string;
+  unitId: string;
   videos: LessonVideoResponse[];
   pdfs: LessonPdfResponse[];
 };
@@ -104,7 +104,7 @@ export function toChapterSummaryResponse(
 
 export function toLessonSummaryResponse(
   lesson: Lesson,
-  hasActiveSubscription: boolean,
+  isLocked: boolean,
   coverUrl: string | null = null,
 ): LessonSummaryResponse {
   return {
@@ -112,7 +112,7 @@ export function toLessonSummaryResponse(
     title: lesson.title,
     sortOrder: lesson.sortOrder,
     accessLevel: lesson.accessLevel,
-    isLocked: computeIsLocked(lesson.accessLevel, hasActiveSubscription),
+    isLocked,
     coverUrl,
   };
 }
@@ -136,19 +136,17 @@ export function toLessonPdfResponse(pdf: LessonPdf): LessonPdfResponse {
 
 export function toLessonDetailResponse(
   lesson: LessonWithMedia,
-  hasActiveSubscription: boolean,
+  isLocked: boolean,
+  unitId: string,
   coverUrl: string | null = null,
 ): LessonDetailResponse {
-  const summary = toLessonSummaryResponse(
-    lesson,
-    hasActiveSubscription,
-    coverUrl,
-  );
+  const summary = toLessonSummaryResponse(lesson, isLocked, coverUrl);
 
   if (summary.isLocked) {
     return {
       ...summary,
       chapterId: lesson.chapterId,
+      unitId,
       videos: [],
       pdfs: [],
     };
@@ -157,6 +155,7 @@ export function toLessonDetailResponse(
   return {
     ...summary,
     chapterId: lesson.chapterId,
+    unitId,
     videos: lesson.videos.map(toLessonVideoResponse),
     pdfs: lesson.pdfs.map(toLessonPdfResponse),
   };

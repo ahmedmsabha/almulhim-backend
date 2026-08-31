@@ -67,12 +67,17 @@ A lesson may be:
 Access rules:
 
 - preview content is visible to eligible students by region
-- locked content requires an active subscription
+- locked (subscriber-only) content requires an active subscription that includes the lesson's unit
+- entitlements are the union of units from every active, unexpired subscription the student holds
 - publication state must also be respected
 
 ---
 
 ## Subscription Lifecycle
+
+Plans grant an explicit set of units (via `plan_units`) and run until a fixed academic-year end date (`accessEndsAt`), not N days from approval. A student may hold multiple active subscriptions at once; buying a second plan is allowed as long as they do not already have an open row for that same plan.
+
+Prices are per region (`priceGaza` / `priceWestBank`). `startsAt` is a display-only “starts in January” label — actual content availability stays governed by unit/lesson `isPublished` flags.
 
 Flow:
 
@@ -81,20 +86,20 @@ Flow:
 3. student uploads a receipt
 4. student enters sender name
 5. system stores the receipt
-6. system performs AI verification
-7. passing receipts move to `pending_approval`
-8. admin approves or rejects
-9. approved requests become `active`
+6. admin approves or rejects
+7. approved requests become `active` until the plan's `accessEndsAt`
 
 Statuses:
 
-- `free` — implicit when the student has no open subscription row (not stored in the database)
+- `free` — implicit when the student has no subscription rows, or derived overall status when none are `active` (not stored in the database)
 - `pending_review`
 - `pending_approval`
 - `active`
 - `expired`
 - `rejected`
 - `suspended`
+
+Overall student status is `active` if any subscription is active, otherwise the most recent row's status, otherwise `free`.
 
 Archived decisions (admin): non-pending statuses `active` | `rejected` | `suspended` | `expired`.
 

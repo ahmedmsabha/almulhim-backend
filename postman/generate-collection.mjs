@@ -19,6 +19,46 @@ const IDS = {
   supportRequestId: '550e8400-e29b-41d4-a716-446655440030',
 };
 
+const ACCESS_ENDS_AT = '2027-06-30T21:00:00.000Z';
+const SAMPLE_UNITS = [{ id: IDS.unitId, title: 'الوحدة الأولى' }];
+const SAMPLE_PUBLIC_PLAN = {
+  id: IDS.planId,
+  name: 'الفصل الأول',
+  description: 'الوحدة الأولى والثانية',
+  priceGaza: 12000,
+  priceWestBank: 25000,
+  currency: 'ILS',
+  accessEndsAt: ACCESS_ENDS_AT,
+  startsAt: null,
+  sortOrder: 0,
+  units: SAMPLE_UNITS,
+};
+const SAMPLE_STUDENT_PLAN = {
+  id: IDS.planId,
+  name: 'الفصل الأول',
+  description: 'الوحدة الأولى والثانية',
+  priceAmount: 12000,
+  currency: 'ILS',
+  accessEndsAt: ACCESS_ENDS_AT,
+  startsAt: null,
+  sortOrder: 0,
+  units: SAMPLE_UNITS,
+};
+const SAMPLE_ADMIN_PLAN = {
+  ...SAMPLE_PUBLIC_PLAN,
+  unitIds: [IDS.unitId],
+  isActive: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+const SAMPLE_PLAN_SUMMARY = {
+  id: IDS.planId,
+  name: 'الفصل الأول',
+  priceGaza: 12000,
+  priceWestBank: 25000,
+  currency: 'ILS',
+};
+
 const mockResponse = (name, status, code, body) => ({
   name,
   originalRequest: { method: 'GET', header: [], url: '{{baseUrl}}/health' },
@@ -251,7 +291,7 @@ const collection = {
         examples: [
           {
             body: {
-              plans: [{ name: 'Monthly', priceAmount: 5000, currency: 'ILS' }],
+              plans: [SAMPLE_PUBLIC_PLAN],
             },
           },
         ],
@@ -264,17 +304,7 @@ const collection = {
         examples: [
           {
             body: {
-              plans: [
-                {
-                  id: IDS.planId,
-                  name: 'Monthly',
-                  description: '30-day access',
-                  priceAmount: 5000,
-                  currency: 'ILS',
-                  durationDays: 30,
-                  sortOrder: 0,
-                },
-              ],
+              plans: [SAMPLE_STUDENT_PLAN],
             },
           },
         ],
@@ -287,20 +317,7 @@ const collection = {
         examples: [
           {
             body: {
-              plans: [
-                {
-                  id: IDS.planId,
-                  name: 'Monthly',
-                  description: '30-day access',
-                  priceAmount: 5000,
-                  currency: 'ILS',
-                  durationDays: 30,
-                  sortOrder: 0,
-                  isActive: true,
-                  createdAt: '2026-01-01T00:00:00.000Z',
-                  updatedAt: '2026-01-01T00:00:00.000Z',
-                },
-              ],
+              plans: [SAMPLE_ADMIN_PLAN],
             },
           },
         ],
@@ -311,29 +328,21 @@ const collection = {
         path: '/plans',
         auth: 'admin',
         body: {
-          name: 'Monthly',
-          description: '30-day access',
-          priceAmount: 5000,
+          name: 'الفصل الأول',
+          description: 'الوحدة الأولى والثانية',
+          priceGaza: 12000,
+          priceWestBank: 25000,
           currency: 'ILS',
-          durationDays: 30,
+          accessEndsAt: ACCESS_ENDS_AT,
+          startsAt: null,
+          unitIds: [IDS.unitId],
           sortOrder: 0,
         },
         examples: [
           {
             code: 201,
             status: 'Created',
-            body: {
-              id: IDS.planId,
-              name: 'Monthly',
-              description: '30-day access',
-              priceAmount: 5000,
-              currency: 'ILS',
-              durationDays: 30,
-              sortOrder: 0,
-              isActive: true,
-              createdAt: '2026-01-01T00:00:00.000Z',
-              updatedAt: '2026-01-01T00:00:00.000Z',
-            },
+            body: SAMPLE_ADMIN_PLAN,
           },
         ],
       }),
@@ -345,18 +354,7 @@ const collection = {
         body: { isActive: false },
         examples: [
           {
-            body: {
-              id: IDS.planId,
-              name: 'Monthly',
-              description: '30-day access',
-              priceAmount: 5000,
-              currency: 'ILS',
-              durationDays: 30,
-              sortOrder: 0,
-              isActive: false,
-              createdAt: '2026-01-01T00:00:00.000Z',
-              updatedAt: '2026-02-01T00:00:00.000Z',
-            },
+            body: { ...SAMPLE_ADMIN_PLAN, isActive: false, updatedAt: '2026-02-01T00:00:00.000Z' },
           },
         ],
       }),
@@ -396,14 +394,9 @@ const collection = {
             body: {
               id: IDS.subscriptionId,
               status: 'pending_review',
-              plan: {
-                id: IDS.planId,
-                name: 'Monthly',
-                priceAmount: 5000,
-                currency: 'ILS',
-                durationDays: 30,
-              },
+              plan: SAMPLE_PLAN_SUMMARY,
               receiptSenderName: 'Ahmad Student',
+              expiresAt: null,
               createdAt: '2026-02-01T12:00:00.000Z',
               updatedAt: '2026-02-01T12:00:00.000Z',
             },
@@ -418,18 +411,19 @@ const collection = {
         examples: [
           {
             body: {
-              id: IDS.subscriptionId,
-              status: 'pending_approval',
-              plan: {
-                id: IDS.planId,
-                name: 'Monthly',
-                priceAmount: 5000,
-                currency: 'ILS',
-                durationDays: 30,
-              },
-              receiptSenderName: 'Ahmad Student',
-              createdAt: '2026-02-01T12:00:00.000Z',
-              updatedAt: '2026-02-01T12:30:00.000Z',
+              subscriptions: [
+                {
+                  id: IDS.subscriptionId,
+                  status: 'pending_approval',
+                  plan: SAMPLE_PLAN_SUMMARY,
+                  receiptSenderName: 'Ahmad Student',
+                  expiresAt: null,
+                  createdAt: '2026-02-01T12:00:00.000Z',
+                  updatedAt: '2026-02-01T12:30:00.000Z',
+                },
+              ],
+              overallStatus: 'pending_approval',
+              entitledUnitIds: [],
             },
           },
         ],
@@ -449,13 +443,7 @@ const collection = {
                 {
                   id: IDS.subscriptionId,
                   status: 'pending_approval',
-                  plan: {
-                    id: IDS.planId,
-                    name: 'Monthly',
-                    priceAmount: 5000,
-                    currency: 'ILS',
-                    durationDays: 30,
-                  },
+                  plan: SAMPLE_PLAN_SUMMARY,
                   student: {
                     id: IDS.userId,
                     fullName: 'Ahmad Student',
@@ -516,13 +504,7 @@ const collection = {
             body: {
               id: IDS.subscriptionId,
               status: 'pending_approval',
-              plan: {
-                id: IDS.planId,
-                name: 'Monthly',
-                priceAmount: 5000,
-                currency: 'ILS',
-                durationDays: 30,
-              },
+              plan: SAMPLE_PLAN_SUMMARY,
               student: {
                 id: IDS.userId,
                 fullName: 'Ahmad Student',
@@ -595,13 +577,7 @@ const collection = {
             body: {
               id: IDS.subscriptionId,
               status: 'active',
-              plan: {
-                id: IDS.planId,
-                name: 'Monthly',
-                priceAmount: 5000,
-                currency: 'ILS',
-                durationDays: 30,
-              },
+              plan: SAMPLE_PLAN_SUMMARY,
               student: {
                 id: IDS.userId,
                 fullName: 'Ahmad Student',
@@ -615,7 +591,7 @@ const collection = {
               approvedAt: '2026-02-01T13:00:00.000Z',
               rejectedAt: null,
               rejectionReason: null,
-              expiresAt: '2026-03-03T13:00:00.000Z',
+              expiresAt: ACCESS_ENDS_AT,
               suspendedAt: null,
               createdAt: '2026-02-01T12:00:00.000Z',
               updatedAt: '2026-02-01T13:00:00.000Z',
@@ -634,13 +610,7 @@ const collection = {
             body: {
               id: IDS.subscriptionId,
               status: 'rejected',
-              plan: {
-                id: IDS.planId,
-                name: 'Monthly',
-                priceAmount: 5000,
-                currency: 'ILS',
-                durationDays: 30,
-              },
+              plan: SAMPLE_PLAN_SUMMARY,
               student: {
                 id: IDS.userId,
                 fullName: 'Ahmad Student',
@@ -672,13 +642,7 @@ const collection = {
             body: {
               id: IDS.subscriptionId,
               status: 'suspended',
-              plan: {
-                id: IDS.planId,
-                name: 'Monthly',
-                priceAmount: 5000,
-                currency: 'ILS',
-                durationDays: 30,
-              },
+              plan: SAMPLE_PLAN_SUMMARY,
               student: {
                 id: IDS.userId,
                 fullName: 'Ahmad Student',
@@ -692,7 +656,7 @@ const collection = {
               approvedAt: '2026-02-01T13:00:00.000Z',
               rejectedAt: null,
               rejectionReason: null,
-              expiresAt: '2026-03-03T13:00:00.000Z',
+              expiresAt: ACCESS_ENDS_AT,
               suspendedAt: '2026-02-15T09:00:00.000Z',
               createdAt: '2026-02-01T12:00:00.000Z',
               updatedAt: '2026-02-15T09:00:00.000Z',

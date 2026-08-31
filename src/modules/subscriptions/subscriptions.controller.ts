@@ -12,6 +12,7 @@ import { RequiresRegistration } from '../../common/decorators/requires-registrat
 import type { User } from '../../generated/prisma/client';
 import { SubscriptionsService } from './subscriptions.service';
 import type {
+  MySubscriptionsResponse,
   ReceiptUploadUrlResponse,
   SubscriptionResponse,
 } from './types/subscription.response';
@@ -64,7 +65,7 @@ export class SubscriptionsController {
   @Get('me')
   async getMySubscription(
     @CurrentUser() user: User,
-  ): Promise<SubscriptionResponse> {
+  ): Promise<MySubscriptionsResponse> {
     return this.subscriptionsService.getMySubscription(user);
   }
 }

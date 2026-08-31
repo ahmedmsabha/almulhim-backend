@@ -12,11 +12,12 @@ export function buildUnitVisibilityWhere(region: StudentRegion) {
 
 export function computeIsLocked(
   accessLevel: LessonAccessLevel,
-  hasActiveSubscription: boolean,
+  unitId: string,
+  entitledUnitIds: ReadonlySet<string>,
 ): boolean {
   if (accessLevel === 'preview') {
     return false;
   }
 
-  return !hasActiveSubscription;
+  return !entitledUnitIds.has(unitId);
 }

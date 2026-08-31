@@ -28,6 +28,7 @@ import {
   buildUnitVisibilityWhere,
   computeIsLocked,
 } from '../content/utils/content-access.utils';
+import { SubscriptionAccessService } from '../subscriptions/subscription-access.service';
 import {
   createVideoStreamTicket,
   verifyVideoStreamTicket,
@@ -42,16 +43,18 @@ import {
   type VideoDownloadListResponse,
 } from './types/download.response';
 
+type LessonWithUnit = Lesson & { chapter: { unitId: string } };
+
 type LessonVideoWithContext = {
   id: string;
   storageKey: string;
-  lesson: Lesson;
+  lesson: LessonWithUnit;
 };
 
 type LessonPdfWithContext = {
   id: string;
   storageKey: string;
-  lesson: Lesson;
+  lesson: LessonWithUnit;
 };
 
 const PUBLISHED_LESSON_WHERE = { isPublished: true } as const;
@@ -91,6 +94,7 @@ export class DownloadsService {
     private readonly prismaService: PrismaService,
     private readonly r2StorageService: R2StorageService,
     private readonly configService: ConfigService<AppEnv, true>,
+    private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {}
 
   async authorizeVideoDownloadFromRequest(
@@ -207,10 +211,15 @@ export class DownloadsService {
       user,
       lessonVideoId,
     );
-    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+    const entitledUnitIds =
+      await this.subscriptionAccessService.getEntitledUnitIds(user.id);
 
     if (
-      computeIsLocked(lessonVideo.lesson.accessLevel, hasActiveSubscription)
+      computeIsLocked(
+        lessonVideo.lesson.accessLevel,
+        lessonVideo.lesson.chapter.unitId,
+        entitledUnitIds,
+      )
     ) {
       throw new NotFoundException('Lesson video not found');
     }
@@ -329,10 +338,15 @@ export class DownloadsService {
       user,
       lessonVideoId,
     );
-    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+    const entitledUnitIds =
+      await this.subscriptionAccessService.getEntitledUnitIds(user.id);
 
     if (
-      computeIsLocked(lessonVideo.lesson.accessLevel, hasActiveSubscription)
+      computeIsLocked(
+        lessonVideo.lesson.accessLevel,
+        lessonVideo.lesson.chapter.unitId,
+        entitledUnitIds,
+      )
     ) {
       throw new NotFoundException('Lesson video not found');
     }
@@ -412,10 +426,15 @@ export class DownloadsService {
     this.assertBoundMediaDevice(device);
 
     const lessonPdf = await this.loadAccessibleLessonPdf(user, lessonPdfId);
-    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+    const entitledUnitIds =
+      await this.subscriptionAccessService.getEntitledUnitIds(user.id);
 
     if (
-      computeIsLocked(lessonPdf.lesson.accessLevel, hasActiveSubscription)
+      computeIsLocked(
+        lessonPdf.lesson.accessLevel,
+        lessonPdf.lesson.chapter.unitId,
+        entitledUnitIds,
+      )
     ) {
       throw new NotFoundException('Lesson PDF not found');
     }
@@ -471,7 +490,8 @@ export class DownloadsService {
     this.assertMobileDevice(device);
 
     try {
-      const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+      const entitledUnitIds =
+        await this.subscriptionAccessService.getEntitledUnitIds(user.id);
       const [downloads, pdfDownloads] = await Promise.all([
         this.prismaService.videoDownload.findMany({
           where: {
@@ -526,7 +546,7 @@ export class DownloadsService {
             this.isVideoDownloadAccessValid(
               user,
               download,
-              hasActiveSubscription,
+              entitledUnitIds,
             ),
           ),
         ),
@@ -536,7 +556,7 @@ export class DownloadsService {
             this.isPdfDownloadAccessValid(
               user,
               download,
-              hasActiveSubscription,
+              entitledUnitIds,
             ),
           ),
         ),
@@ -614,7 +634,13 @@ export class DownloadsService {
           },
         },
         include: {
-          lesson: true,
+          lesson: {
+            include: {
+              chapter: {
+                select: { unitId: true },
+              },
+            },
+          },
         },
       });
 
@@ -653,7 +679,13 @@ export class DownloadsService {
           },
         },
         include: {
-          lesson: true,
+          lesson: {
+            include: {
+              chapter: {
+                select: { unitId: true },
+              },
+            },
+          },
         },
       });
 
@@ -745,6 +777,7 @@ export class DownloadsService {
           chapter: {
             isPublished: boolean;
             unit: {
+              id: string;
               isPublished: boolean;
               region: User['region'] | 'both';
             };
@@ -752,7 +785,7 @@ export class DownloadsService {
         };
       };
     },
-    hasActiveSubscription: boolean,
+    entitledUnitIds: ReadonlySet<string>,
   ): boolean {
     if (download.revokedAt !== null) {
       return false;
@@ -772,7 +805,7 @@ export class DownloadsService {
       return false;
     }
 
-    return !computeIsLocked(lesson.accessLevel, hasActiveSubscription);
+    return !computeIsLocked(lesson.accessLevel, unit.id, entitledUnitIds);
   }
 
   private isPdfDownloadAccessValid(
@@ -783,6 +816,7 @@ export class DownloadsService {
           chapter: {
             isPublished: boolean;
             unit: {
+              id: string;
               isPublished: boolean;
               region: User['region'] | 'both';
             };
@@ -790,7 +824,7 @@ export class DownloadsService {
         };
       };
     },
-    hasActiveSubscription: boolean,
+    entitledUnitIds: ReadonlySet<string>,
   ): boolean {
     if (download.revokedAt !== null) {
       return false;
@@ -810,27 +844,6 @@ export class DownloadsService {
       return false;
     }
 
-    return !computeIsLocked(lesson.accessLevel, hasActiveSubscription);
-  }
-
-  private async hasActiveSubscription(userId: string): Promise<boolean> {
-    try {
-      const subscription = await this.prismaService.subscription.findFirst({
-        where: {
-          userId,
-          status: 'active',
-          expiresAt: { gt: new Date() },
-        },
-        select: { id: true },
-      });
-
-      return subscription !== null;
-    } catch (error) {
-      this.logger.error(
-        `Failed to check active subscription for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
+    return !computeIsLocked(lesson.accessLevel, unit.id, entitledUnitIds);
   }
 }

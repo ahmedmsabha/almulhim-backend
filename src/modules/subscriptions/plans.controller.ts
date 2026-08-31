@@ -9,8 +9,10 @@ import {
   Post,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import type { User } from '../../generated/prisma/client';
 import { PlansService } from './plans.service';
 import {
   type AdminPlanListResponse,
@@ -36,8 +38,8 @@ export class PlansController {
   }
 
   @Get()
-  async listActivePlans(): Promise<PlanListResponse> {
-    return this.plansService.listActivePlans();
+  async listActivePlans(@CurrentUser() user: User): Promise<PlanListResponse> {
+    return this.plansService.listActivePlans(user);
   }
 
   @Roles('admin')

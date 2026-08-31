@@ -8,6 +8,7 @@ import type { User } from '../../generated/prisma/client';
 import { AiProviderService } from '../../lib/ai';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { R2StorageService } from '../../lib/storage';
+import { SubscriptionAccessService } from '../subscriptions/subscription-access.service';
 import {
   searchContentSchema,
   type SearchContentInput,
@@ -24,7 +25,7 @@ import {
   type UnitDetailResponse,
   type UnitListResponse,
 } from './types/content.response';
-import { buildUnitVisibilityWhere } from './utils/content-access.utils';
+import { buildUnitVisibilityWhere, computeIsLocked } from './utils/content-access.utils';
 import { createLessonCoverUrl } from './utils/lesson-cover-url';
 
 const PUBLISHED_CHAPTER_WHERE = { isPublished: true } as const;
@@ -59,10 +60,13 @@ export class ContentService {
     private readonly prismaService: PrismaService,
     private readonly aiProviderService: AiProviderService,
     private readonly r2StorageService: R2StorageService,
+    private readonly subscriptionAccessService: SubscriptionAccessService,
   ) {}
 
   async getTree(user: User): Promise<ContentTreeResponse> {
-    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+    const entitledUnitIds = await this.subscriptionAccessService.getEntitledUnitIds(
+      user.id,
+    );
 
     try {
       const units = await this.prismaService.unit.findMany({
@@ -93,7 +97,11 @@ export class ContentService {
                   chapter.lessons.map(async (lesson) =>
                     toLessonSummaryResponse(
                       lesson,
-                      hasActiveSubscription,
+                      computeIsLocked(
+                        lesson.accessLevel,
+                        unit.id,
+                        entitledUnitIds,
+                      ),
                       await createLessonCoverUrl(
                         this.r2StorageService,
                         lesson.coverStorageKey,
@@ -171,7 +179,9 @@ export class ContentService {
     user: User,
     chapterId: string,
   ): Promise<ChapterDetailResponse> {
-    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+    const entitledUnitIds = await this.subscriptionAccessService.getEntitledUnitIds(
+      user.id,
+    );
 
     try {
       const chapter = await this.prismaService.chapter.findFirst({
@@ -199,7 +209,11 @@ export class ContentService {
           chapter.lessons.map(async (lesson) =>
             toLessonSummaryResponse(
               lesson,
-              hasActiveSubscription,
+              computeIsLocked(
+                lesson.accessLevel,
+                chapter.unitId,
+                entitledUnitIds,
+              ),
               await createLessonCoverUrl(
                 this.r2StorageService,
                 lesson.coverStorageKey,
@@ -222,7 +236,9 @@ export class ContentService {
   }
 
   async getLesson(user: User, lessonId: string): Promise<LessonDetailResponse> {
-    const hasActiveSubscription = await this.hasActiveSubscription(user.id);
+    const entitledUnitIds = await this.subscriptionAccessService.getEntitledUnitIds(
+      user.id,
+    );
 
     try {
       const lesson = await this.prismaService.lesson.findFirst({
@@ -235,6 +251,9 @@ export class ContentService {
           },
         },
         include: {
+          chapter: {
+            select: { unitId: true },
+          },
           videos: {
             orderBy: MEDIA_ORDER,
           },
@@ -253,7 +272,16 @@ export class ContentService {
         lesson.coverStorageKey,
       );
 
-      return toLessonDetailResponse(lesson, hasActiveSubscription, coverUrl);
+      return toLessonDetailResponse(
+        lesson,
+        computeIsLocked(
+          lesson.accessLevel,
+          lesson.chapter.unitId,
+          entitledUnitIds,
+        ),
+        lesson.chapter.unitId,
+        coverUrl,
+      );
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -338,26 +366,5 @@ export class ContentService {
     });
 
     return uniqueAllowed;
-  }
-
-  private async hasActiveSubscription(userId: string): Promise<boolean> {
-    try {
-      const subscription = await this.prismaService.subscription.findFirst({
-        where: {
-          userId,
-          status: 'active',
-          expiresAt: { gt: new Date() },
-        },
-        select: { id: true },
-      });
-
-      return subscription !== null;
-    } catch (error) {
-      this.logger.error(
-        `Failed to check active subscription for user ${userId}`,
-        error,
-      );
-      throw error;
-    }
   }
 }

@@ -2,13 +2,15 @@ import type {
   Subscription,
   SubscriptionPlan,
 } from '../../../generated/prisma/client';
+import type { StudentSubscriptionStatus } from '../../users/schemas/list-students-query.schema';
+import { deriveStudentSubscriptionStatus } from '../../users/types/user-profile.response';
 
 export type SubscriptionPlanSummary = {
   id: string;
   name: string;
-  priceAmount: number;
+  priceGaza: number;
+  priceWestBank: number;
   currency: string;
-  durationDays: number;
 };
 
 export type SubscriptionResponse = {
@@ -16,8 +18,15 @@ export type SubscriptionResponse = {
   status: Subscription['status'];
   plan: SubscriptionPlanSummary;
   receiptSenderName: string | null;
+  expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type MySubscriptionsResponse = {
+  subscriptions: SubscriptionResponse[];
+  overallStatus: StudentSubscriptionStatus;
+  entitledUnitIds: string[];
 };
 
 export type ReceiptUploadUrlResponse = {
@@ -35,9 +44,9 @@ export const toSubscriptionPlanSummary = (
 ): SubscriptionPlanSummary => ({
   id: plan.id,
   name: plan.name,
-  priceAmount: plan.priceAmount,
+  priceGaza: plan.priceGaza,
+  priceWestBank: plan.priceWestBank,
   currency: plan.currency,
-  durationDays: plan.durationDays,
 });
 
 export const toSubscriptionResponse = (
@@ -47,6 +56,16 @@ export const toSubscriptionResponse = (
   status: subscription.status,
   plan: toSubscriptionPlanSummary(subscription.plan),
   receiptSenderName: subscription.receiptSenderName,
+  expiresAt: subscription.expiresAt?.toISOString() ?? null,
   createdAt: subscription.createdAt.toISOString(),
   updatedAt: subscription.updatedAt.toISOString(),
+});
+
+export const toMySubscriptionsResponse = (
+  subscriptions: SubscriptionWithPlan[],
+  entitledUnitIds: string[],
+): MySubscriptionsResponse => ({
+  subscriptions: subscriptions.map(toSubscriptionResponse),
+  overallStatus: deriveStudentSubscriptionStatus(subscriptions),
+  entitledUnitIds,
 });

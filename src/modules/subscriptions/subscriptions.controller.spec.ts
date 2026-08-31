@@ -34,14 +34,21 @@ describe('SubscriptionsController', () => {
     status: 'pending_review' as const,
     plan: {
       id: 'plan-uuid-1',
-      name: 'Monthly',
-      priceAmount: 9900,
+      name: 'الفصل الأول',
+      priceGaza: 12000,
+      priceWestBank: 25000,
       currency: 'ILS',
-      durationDays: 30,
     },
     receiptSenderName: 'Sender Name',
+    expiresAt: null as string | null,
     createdAt: '2026-06-30T11:00:00.000Z',
     updatedAt: '2026-06-30T11:00:00.000Z',
+  };
+
+  const mySubscriptionsResponse = {
+    subscriptions: [subscriptionResponse],
+    overallStatus: 'pending_review' as const,
+    entitledUnitIds: [] as string[],
   };
 
   beforeEach(() => {
@@ -147,12 +154,12 @@ describe('SubscriptionsController', () => {
 
   it('delegates getMySubscription to the service', async () => {
     subscriptionsService.getMySubscription.mockResolvedValue(
-      subscriptionResponse,
+      mySubscriptionsResponse,
     );
 
     await expect(
       subscriptionsController.getMySubscription(studentUser),
-    ).resolves.toEqual(subscriptionResponse);
+    ).resolves.toEqual(mySubscriptionsResponse);
 
     expect(subscriptionsService.getMySubscription).toHaveBeenCalledWith(
       studentUser,

@@ -20,17 +20,63 @@ describe('PlansController', () => {
     >
   >;
 
+  const studentUser = {
+    id: '550e8400-e29b-41d4-a716-446655440001',
+    clerkId: 'user_123',
+    email: 'student@example.com',
+    fullName: 'Student Name',
+    phoneNumber: '0599000000',
+    telegramUsername: 'student_tg',
+    region: 'gaza' as const,
+    role: 'student' as const,
+    deactivatedAt: null as Date | null,
+    createdAt: new Date('2026-06-30T10:00:00.000Z'),
+    updatedAt: new Date('2026-06-30T10:00:00.000Z'),
+  };
+
+  const unitId = '550e8400-e29b-41d4-a716-446655440010';
+  const accessEndsAt = '2027-06-30T21:00:00.000Z';
+
   const adminPlan = {
     id: 'plan-uuid-1',
-    name: 'Monthly',
-    description: 'One month access',
-    priceAmount: 9900,
+    name: 'الفصل الأول',
+    description: 'Units 1 and 2',
+    priceGaza: 12000,
+    priceWestBank: 25000,
     currency: 'ILS',
-    durationDays: 30,
+    accessEndsAt,
+    startsAt: null as string | null,
     sortOrder: 0,
     isActive: true,
+    unitIds: [unitId],
+    units: [{ id: unitId, title: 'الوحدة الأولى' }],
     createdAt: '2026-06-30T10:00:00.000Z',
     updatedAt: '2026-06-30T10:00:00.000Z',
+  };
+
+  const publicPlan = {
+    id: adminPlan.id,
+    name: adminPlan.name,
+    description: adminPlan.description,
+    priceGaza: 12000,
+    priceWestBank: 25000,
+    currency: 'ILS',
+    accessEndsAt,
+    startsAt: null,
+    sortOrder: 0,
+    units: adminPlan.units,
+  };
+
+  const studentPlan = {
+    id: adminPlan.id,
+    name: adminPlan.name,
+    description: adminPlan.description,
+    priceAmount: 12000,
+    currency: 'ILS',
+    accessEndsAt,
+    startsAt: null,
+    sortOrder: 0,
+    units: adminPlan.units,
   };
 
   beforeEach(() => {
@@ -48,62 +94,26 @@ describe('PlansController', () => {
 
   it('delegates listPublicPlans to the service', async () => {
     plansService.listPublicPlans.mockResolvedValue({
-      plans: [
-        {
-          id: adminPlan.id,
-          name: 'Monthly',
-          description: adminPlan.description,
-          priceAmount: 9900,
-          currency: 'ILS',
-          durationDays: 30,
-          sortOrder: 0,
-        },
-      ],
+      plans: [publicPlan],
     });
 
     await expect(plansController.listPublicPlans()).resolves.toEqual({
-      plans: [
-        {
-          id: adminPlan.id,
-          name: 'Monthly',
-          description: adminPlan.description,
-          priceAmount: 9900,
-          currency: 'ILS',
-          durationDays: 30,
-          sortOrder: 0,
-        },
-      ],
+      plans: [publicPlan],
     });
   });
 
-  it('delegates listActivePlans to the service', async () => {
+  it('delegates listActivePlans with the current user', async () => {
     plansService.listActivePlans.mockResolvedValue({
-      plans: [
-        {
-          id: adminPlan.id,
-          name: adminPlan.name,
-          description: adminPlan.description,
-          priceAmount: adminPlan.priceAmount,
-          currency: adminPlan.currency,
-          durationDays: adminPlan.durationDays,
-          sortOrder: adminPlan.sortOrder,
-        },
-      ],
+      plans: [studentPlan],
     });
 
-    await expect(plansController.listActivePlans()).resolves.toEqual({
-      plans: [
-        {
-          id: adminPlan.id,
-          name: adminPlan.name,
-          description: adminPlan.description,
-          priceAmount: adminPlan.priceAmount,
-          currency: adminPlan.currency,
-          durationDays: adminPlan.durationDays,
-          sortOrder: adminPlan.sortOrder,
-        },
-      ],
+    await expect(
+      plansController.listActivePlans(studentUser),
+    ).resolves.toEqual({
+      plans: [studentPlan],
     });
+
+    expect(plansService.listActivePlans).toHaveBeenCalledWith(studentUser);
   });
 
   it('delegates listAllPlans to the service', async () => {
@@ -117,19 +127,17 @@ describe('PlansController', () => {
   it('delegates createPlan to the service', async () => {
     plansService.createPlan.mockResolvedValue(adminPlan);
 
-    await expect(
-      plansController.createPlan({
-        name: 'Monthly',
-        priceAmount: 9900,
-        durationDays: 30,
-      }),
-    ).resolves.toEqual(adminPlan);
+    const body = {
+      name: 'الفصل الأول',
+      priceGaza: 12000,
+      priceWestBank: 25000,
+      accessEndsAt,
+      unitIds: [unitId],
+    };
 
-    expect(plansService.createPlan).toHaveBeenCalledWith({
-      name: 'Monthly',
-      priceAmount: 9900,
-      durationDays: 30,
-    });
+    await expect(plansController.createPlan(body)).resolves.toEqual(adminPlan);
+
+    expect(plansService.createPlan).toHaveBeenCalledWith(body);
   });
 
   it('maps Zod validation errors to BadRequestException on create', async () => {

@@ -75,20 +75,38 @@ model User {
 }
 
 model SubscriptionPlan {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String
-  description  String?
-  priceAmount  Int      @map("price_amount")
-  currency     String   @default("ILS")
-  durationDays Int      @map("duration_days")
-  isActive     Boolean  @default(true) @map("is_active")
-  sortOrder    Int      @default(0) @map("sort_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String
+  description   String?
+  priceGaza     Int       @map("price_gaza")
+  priceWestBank Int       @map("price_west_bank")
+  currency      String    @default("ILS")
+  /// Access runs until this date regardless of approval date (academic year end).
+  accessEndsAt  DateTime  @map("access_ends_at")
+  /// Display-only "starts in January" label; null means available now.
+  startsAt      DateTime? @map("starts_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  sortOrder     Int       @default(0) @map("sort_order")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   subscriptions Subscription[]
+  units         PlanUnit[]
 
   @@map("subscription_plans")
+}
+
+model PlanUnit {
+  planId    String   @map("plan_id") @db.Uuid
+  unitId    String   @map("unit_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  unit Unit             @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@id([planId, unitId])
+  @@index([unitId])
+  @@map("plan_units")
 }
 
 model Subscription {
@@ -115,7 +133,7 @@ model Subscription {
   @@index([userId, status])
   @@index([status])
   /// Partial unique indexes are defined in SQL migrations only:
-  /// - subscriptions_one_open_per_user_idx (one open row per user)
+  /// - subscriptions_one_open_per_plan_idx (one open row per user+plan)
   /// - subscriptions_receipt_storage_key_unique_idx (unique receipt keys)
   @@map("subscriptions")
 }
@@ -132,6 +150,7 @@ model Unit {
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
   chapters Chapter[]
+  plans    PlanUnit[]
 
   @@index([region, isPublished, sortOrder])
   @@map("units")
